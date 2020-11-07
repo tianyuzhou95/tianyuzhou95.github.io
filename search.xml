@@ -386,9 +386,12 @@
 <a id="more"></a>
 
 <h2 id="插件安装"><a href="#插件安装" class="headerlink" title="插件安装"></a>插件安装</h2><h3 id="C-C-for-vscode"><a href="#C-C-for-vscode" class="headerlink" title="C/C++ for vscode"></a>C/C++ for vscode</h3><p>vscode 阅读 Linux Kernel 代码需要安装 <code>ms-vscode.cpptools</code> 这款插件，只需要在插件管理器当中搜索 <code>C/C++</code> 即可。安装完毕之后重启 vscode，在该插件的配置文件当中配置当前目录的 <code>.json</code> 文件。</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"configurations"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">"name"</span>: <span class="string">"Linux"</span>,</span><br><span class="line">            <span class="attr">"includePath"</span>: [</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/**"</span>,</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/include"</span>,</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/arch/x86/include/*"</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">"defines"</span>: [</span><br><span class="line">                <span class="string">"__GNUC__"</span>,</span><br><span class="line">                <span class="string">"__KERNEL__"</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">"compilerPath"</span>: <span class="string">"/usr/bin/gcc"</span>,</span><br><span class="line">            <span class="attr">"cStandard"</span>: <span class="string">"c11"</span>,</span><br><span class="line">            <span class="attr">"cppStandard"</span>: <span class="string">"c++17"</span>,</span><br><span class="line">            <span class="attr">"intelliSenseMode"</span>: <span class="string">"gcc-x64"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">"version"</span>: <span class="number">4</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"configurations"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">"name"</span>: <span class="string">"Linux"</span>,</span><br><span class="line">            <span class="attr">"includePath"</span>: [</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/**"</span>,</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/include"</span>,</span><br><span class="line">                <span class="string">"$&#123;workspaceFolder&#125;/arch/x86/include/*"</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">"defines"</span>: [</span><br><span class="line">                <span class="string">"__GNUC__"</span>,</span><br><span class="line">                <span class="string">"__KERNEL__"</span></span><br><span class="line">            ],</span><br><span class="line">            <span class="attr">"compilerPath"</span>: <span class="string">"/usr/bin/gcc"</span>,</span><br><span class="line">            <span class="attr">"cStandard"</span>: <span class="string">"c11"</span>,</span><br><span class="line">            <span class="attr">"cppStandard"</span>: <span class="string">"c++17"</span>,</span><br><span class="line">            <span class="attr">"intelliSenseMode"</span>: <span class="string">"gcc-x64"</span>,</span><br><span class="line">            <span class="attr">"browse"</span>: &#123;</span><br><span class="line">                <span class="attr">"path"</span>: [<span class="string">"$&#123;workspaceFolder&#125;"</span>],</span><br><span class="line">                <span class="attr">"limitSymbolsToIncludedHeaders"</span>: <span class="literal">true</span>,</span><br><span class="line">                <span class="attr">"databaseFilename"</span>: <span class="string">""</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">"version"</span>: <span class="number">4</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>这些配置在 GUI 模式下也可以配置，也可以 <code>ctrl+P</code> 之后输入 <code>&gt;</code>，输入 <code>C/C++: Edit Configuration (JSON)</code> 进行配置。</p>
+<p>同时设置<code>C_Cpp.intelliSenseEngine</code>，以便于递归搜索include文件，具体可以<span class="exturl" data-url="aHR0cHM6Ly9jb2RlLnZpc3VhbHN0dWRpby5jb20vZG9jcy9jcHAvYy1jcHAtcHJvcGVydGllcy1zY2hlbWEtcmVmZXJlbmNlI19jb25maWd1cmF0aW9uLXByb3BlcnRpZXM=" title="https://code.visualstudio.com/docs/cpp/c-cpp-properties-schema-reference#_configuration-properties">参考此处<i class="fa fa-external-link"></i></span>。</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">"C_Cpp.intelliSenseEngine": "Tag Parser"</span><br></pre></td></tr></table></figure>
+
 <p>引入这些配置之后查看 Kernel 代买就不会报错了。</p>
 <h3 id="GNU-Global"><a href="#GNU-Global" class="headerlink" title="GNU Global"></a>GNU Global</h3><p>这需要手动在命令行安装</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt install global</span></span><br></pre></td></tr></table></figure>
@@ -914,8 +917,8 @@
         <category>Container</category>
       </categories>
       <tags>
-        <tag>llvm</tag>
         <tag>golang</tag>
+        <tag>llvm</tag>
       </tags>
   </entry>
   <entry>
@@ -978,8 +981,8 @@
         <category>Golang</category>
       </categories>
       <tags>
-        <tag>llvm</tag>
         <tag>golang</tag>
+        <tag>llvm</tag>
       </tags>
   </entry>
   <entry>
