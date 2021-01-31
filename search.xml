@@ -1,6 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>[leetcode]drop eggs</title>
+    <url>/2021/01/28/leetcode-drop-eggs/</url>
+    <content><![CDATA[<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+tex2jax: {
+skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+inlineMath: [['$','$']]
+}
+});
+</script>
+
+<p>经典的鸡蛋掉落问题解析。包含了3个解答。</p>
+<a id="more"></a>
+
+<h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>你将获得 <code>K</code> 个鸡蛋，并可以使用一栋从 <code>1</code> 到 <code>N</code>  共有 <code>N</code> 层楼的建筑。</p>
+<p>每个蛋的功能都是一样的，如果一个蛋碎了，你就不能再把它扔下去。</p>
+<p>你知道存在楼层 <code>F</code> ，满足 <code>0 &lt;= F &lt;= N</code> 任何从高于 <code>F</code> 的楼层落下的鸡蛋都会碎，从 <code>F</code> 楼层或比它低的楼层落下的鸡蛋都不会破。</p>
+<p>每次移动，你可以取一个鸡蛋（如果你有完整的鸡蛋）并把它从任一楼层 <code>X</code> 扔下（满足 <code>1 &lt;= X &lt;= N</code>）。</p>
+<p>你的目标是知道 <code>F</code> 的值是多少。</p>
+<p>无论 <code>F</code> 的初始值如何，你确定 <code>F</code> 的值的最小移动次数是多少？</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例 1"></a>示例 1</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">输入：K &#x3D; 1, N &#x3D; 2</span><br><span class="line">输出：2</span><br><span class="line">解释：</span><br><span class="line">鸡蛋从 1 楼掉落。如果它碎了，我们肯定知道 F &#x3D; 0 。</span><br><span class="line">否则，鸡蛋从 2 楼掉落。如果它碎了，我们肯定知道 F &#x3D; 1 。</span><br><span class="line">如果它没碎，那么我们肯定知道 F &#x3D; 2 。</span><br><span class="line">因此，在最坏的情况下我们需要移动 2 次以确定 F 是多少。</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例 2"></a>示例 2</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">输入：K &#x3D; 2, N &#x3D; 6</span><br><span class="line">输出：3</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例-3"><a href="#示例-3" class="headerlink" title="示例 3"></a>示例 3</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">输入：K &#x3D; 3, N &#x3D; 14</span><br><span class="line">输出：4</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="题目分析"><a href="#题目分析" class="headerlink" title="题目分析"></a>题目分析</h2><p>我碰到这道题的时候，第一反应是非常的熟悉。惭愧的是，在本科找实习的时候面试网易，没有成功的做出来这道题。虽然当时的思路已经记不清了，但是我还是本能的想到可能涉及到了动态规划。动态规划在我看来其实和数学归纳很相似，存在了一个递推公式。</p>
+<p><strong>鸡蛋掉落问题</strong>其实也存在类似的规律。如果不计较计算成本，我们可以采用非常暴力的枚举法来解决这个问题。</p>
+<p>如当我们求解 $(K, N)$ 条件下的 $F$ 时，可以先分析第一次扔鸡蛋的情况。</p>
+<p>假设我们在第 $x$ 层（$1 \leq x \leq K$）扔下了鸡蛋，可能会存在以下两种情况：</p>
+<ol>
+<li>蛋碎了（T_T），那么我们得到了一个结论—— $F &lt; x$</li>
+<li>蛋没碎（^_^），因此同样可以得到一个结论—— $F \geq x$</li>
+</ol>
+<p><em>注意情况（2）中，真正的 $F$ 可能恰好就是 $x$。</em></p>
+<p>不管蛋有没有碎，我们都需要继续进一步去确认 $F$ 的值，因此需要继续投蛋。这个时候就可以发现，不管是情况（1）还是情况（2），都跟原来的问题具有很大的相似性：</p>
+<ol>
+<li>蛋碎了（$F &lt; x$），即已知 $0 \leq F \leq x-1$，$K&#39; = K-1$，求得到 $F$ 的最小次数，换句话来说，就是 $K&#39; = K-1, N&#39; = x-1$ 情况下的求解</li>
+<li>蛋没碎（$F \geq x$），稍微有点绕，已知 $x \leq F \leq N$，$K&#39; = K$，求得到 $F$ 的最小次数，就是 $K&#39; = K, N&#39; = N - x$ 情况下的求解</li>
+</ol>
+<p>我们记原问题的解为 $L(K, N)$，则情况（1）为继续求解 $L(K-1, x-1)$， 情况（2）为继续求解 $L(K, N-x)$。因此我们可以将原问题分解为两个子问题<br>$$<br>L(K, N) = 1 + \min_{1\leq x\leq N}(\max(L(K-1, x-1), L(K, N-x)))\tag{1}<br>$$</p>
+<p>到了这一步不难看出，只要 $K&gt;1$ 或 $N &gt; 1$，我们就可以不断的去分解问题，当 $K = 1$ 的时候，因为承受不起蛋碎的后果，所以只能从最低层一层一层往上扔蛋了。</p>
+<p>如果不考虑时间复杂度的话，题目到这里就已经解好了，即我们每次只需要从 $1$ 到 $N$ 遍历求一遍所有的 $\max(L(K-1, x-1), L(K, N-x))$，这之中最小的那个就是我们要的次数。</p>
+<p><strong>然而这个大部分人都想的到，所以会因为 time limit 被卡在一些测试点上。</strong></p>
+<h2 id="解法展示"><a href="#解法展示" class="headerlink" title="解法展示"></a>解法展示</h2><h3 id="解1-二分查找"><a href="#解1-二分查找" class="headerlink" title="解1 二分查找"></a>解1 二分查找</h3><p>为了减少时间复杂度，我们需要优化寻找最优解的过程，回到刚刚总结出的递推公式 $(1)$<br>$$<br>L(K, N) = 1 + \min_{1\leq x\leq N}(\max(L(K-1, x-1), L(K, N-x)))\tag{1}<br>$$</p>
+<p>在求解使得 $\max(L(K-1, x-1), L(K, N-x))$ 最小的 $x_{opt}$ 时，最粗暴也是时间复杂度最大的方法是从 1 到 N 遍历，找到其中的最小值。如果采用这种方法，那么时间复杂度就会变成 $O(KN^2)$。</p>
+<p>一开始我也想到了使用二分查找来解决这个问题，但是我思考的不对，我直接拿 $N/2$ 来进行查找，默认 $x_{opt}$ 就是 $N/2$。后来我才意识到这是不对的，在很多情况下（如 $L(2, 100)$），$x_{opt}$ 明显不等于 50。</p>
+<p>后来我从别人的解答中发现，我其实没有掌握二分法的精髓。二分法的精髓在于，<strong>要找到最优解的左右两边的不等关系</strong>。</p>
+<p>如下图所示，我们要求解曲线 $y=f(x)$ 和 $x$ 轴的交点 $(x_0, 0)$，使得当 $x=x_0$ 时，$y_0=f(x_0)=0$。此时我们需要注意到，在 $x_0$ 的左侧（$x_l &lt; x &lt; x_0$），有 $f(x) &lt; 0$；同理在 $x_0$ 的右侧（$x_r &gt; x&gt;x_0$），有 $f(x) &gt; 0$。因此我们可以找到一组 $(x_l, x_r)$，有 $f(x_l) &lt; 0, f(x_r) &gt; 0, x_l &lt; x_0 &lt; x_r$，这个时候我们取 $x_{mid} = (x_l + x_r)/2$，计算 $f(x_{mid})$ 的值，并更新 $(x_l, x_r)$。</p>
+<p><img src="/images/leetcoode/drop-eggs/1.png" alt="image-20210130101022092"></p>
+<p>由此看出，二分法的实质其实是在于解的两侧存在着不等式的改变，当且仅当 $x = x_0$ 时，等式成立。</p>
+<p>那么我们也可以将扔鸡蛋的问题改造成二分查找问题。首先分析公式（1）的内部<br>$$<br>\max(L(K-1, x-1), L(K, N-x)) \tag{2}<br>$$<br>当 $K$，$N$ 不变时，可将上式（2）变为<br>$$<br>\max(f(x), g(x)) \tag{2&#39;}<br>$$<br>其中 $f(x) = L(K-1, x-1)$，$g(x) = L(K, N-x)$。</p>
+<p>无论是 $f(x)$ 还是 $g(x)$，单调性都可以非常明显的看出。对于 $f(x)=L(K-1, x-1)$，显然 $x$ 越大，$f(x)$ 越大；对于 $g(x)$ 来说，明显 $x$ 越大，$g(x)$ 越小。且有 $f(1) \leq g(1), f(N) &gt; g(N)$，因此可以绘制如下曲线</p>
+<p><img src="/images/leetcoode/drop-eggs/2.png" alt="image-20210129202306777"></p>
+<p>其中 $f(x)$ 和 $g(x)$ 的交点为 $A(x_A, y_A)$，可以看出在 $A$ 点左侧，$f(x) &lt; g(x)$，在 $A$ 点右侧，$f(x) &gt; g(x)$。因此有<br>$$<br>\max(f(x), g(x)) =\begin{cases}<br>&amp; g(x) &amp; (x&lt;x_A) \\<br>&amp; y_A &amp; (x = x_A) \\<br>&amp; f(x) &amp; (x&gt;x_A)<br>\end{cases}<br>\tag{2&#39;&#39;}<br>$$<br>明显当 $x=x_A$ 时，上述式子取到最小值。而由公式（2‘’）可以找到二分法的不等关系，即在最优解 $x_A$ 的左侧，有 $f(x) &lt; g(x)$， 在最优解 $x_A$ 右侧，$f(x) &gt; g(x)$。因此可以应用二分法来锁定最逼近最优解 $x_A$ 的值 $x_{opt}$（由于必须要取整数，所以无法直接取到 $x_A$）。</p>
+<p>道理讲清楚代码就好写了。</p>
+<p>这里的时间复杂度是 $O(K*NlogN)$。</p>
+<h3 id="解2-决策单调性"><a href="#解2-决策单调性" class="headerlink" title="解2 决策单调性"></a>解2 决策单调性</h3><p>如果不用二分法，也可以从函数的单调性入手。</p>
+<p>重新来审视之前总结的公式（1）<br>$$<br>L(K, N) = 1 + \min_{1\leq x\leq N}(\max(L(K-1, x-1), L(K, N-x)))\tag{1}<br>$$</p>
+<p>我们可以注意到，当如果 $K, x$ 保持不变，当 $N$ 变大时， $f(x) = L(K-1, x-1)$ 保持不变，$g(x) = L(K, N-x)$ 显然会变大。可以解读为 $f(x)$ 曲线不变，$g(x)$ 曲线右移</p>
+<p><img src="/images/leetcoode/drop-eggs/3.png" alt="image-20210129202234888"></p>
+<p>因此最优解 $x_{A&#39;}$ 肯定也会右移。由此对于最优解 $x_{opt}$ 来说，当 $K$ 保持不变时，$x_{opt}$ 会随着 $N$ 的增大而增大。因而我们可以发现，如果从 $K=1$ 开始计算，遍历一遍 $N$ 就能得到所有 $N = n$ 情况下的最优解 $x_{opt}$ 和最小值 $L(K, n)$。</p>
+<p>从而代码也就好写了。</p>
+<p>这里的时间复杂度时 $O(K*N)$ </p>
+<h3 id="解3-逆向思维"><a href="#解3-逆向思维" class="headerlink" title="解3 逆向思维"></a>解3 逆向思维</h3><p>这种方法按照一般思维顺序是想不到的。这里我们先把之前整理出来的公式忘掉，并思考以下问题：</p>
+<p><strong>给定投掷次数 $T$，和鸡蛋的个数 $K$，最多能够确定多少层楼的确切掉落高度？</strong></p>
+<p>如果我们能够确定每一组 $(T, K)$ 对应的最大楼层高度 $N$，那么对于任意 $N$，只要找到对应的最小 $T$ 即可。</p>
+<p>我们设<br>$$<br>N = f(T, K)<br>$$<br>有如下特殊情况<br>$$<br>f(T, 1) = T \\<br>f(1, K) = 1<br>$$<br>在此基础上我们设想投掷一次鸡蛋的情况，无非还是之前讨论过的两种情况：</p>
+<ol>
+<li>鸡蛋碎了，可用次数 $T = T - 1$，可用鸡蛋 $K = K-1$</li>
+<li>鸡蛋没碎，可用次数 $T=T-1$，可用鸡蛋 $K = K$</li>
+</ol>
+<p>因此对于情况 1，还可以测 $f(T-1, K-1)$ 层楼，对于情况 2，还可以测 $f(T-1, K)$ 层楼，加上这一次投掷测出来的这一层，之前的公式可以展开为<br>$$<br>f(T, K) = 1 + f(T-1, K-1) + f(T-1, K)<br>$$<br>如下图所示，其实我们不必去思考第一层还是最后一层，我们只关心给定 $T$ 和 $K$，最多可以测量多少层楼。因此需要把两种情况都加起来，这里和之前的两种解法都不一样，需要仔细的去想清楚。</p>
+<p><img src="/images/leetcoode/drop-eggs/4.png" alt="image-20210131132122708"></p>
+<p>有了这层递归关系之后，就可以从 $f(1, 1)$ 开始迭代了。</p>
+]]></content>
+      <categories>
+        <category>leetcode</category>
+      </categories>
+      <tags>
+        <tag>algorithm</tag>
+        <tag>binary search</tag>
+        <tag>dynamic programming</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Some Tip for Bochs(the famous x86 emulator)</title>
+    <url>/2021/01/24/bochs-info/</url>
+    <content><![CDATA[<p>本文简要介绍了如何使用 Bochs，包括跑一个 Linux OS（当然 windows 肯定也是可以的），以及如何利用编写 Bochs 脚本来获取 Guest OS 的运行数据。</p>
+<a id="more"></a>
+
+
+<p>以下是关于 Bochs 的官方说明。（本文所有引用均来源于 Bochs 的官方网站）</p>
+<blockquote>
+<p>Bochs is a highly portable <strong>open source IA-32 (x86) PC emulator written in C++</strong>, that runs on most popular platforms. It includes emulation of the Intel x86 CPU, common I/O devices, and a custom BIOS. Bochs can be compiled to emulate many different x86 CPUs, from early 386 to the most recent x86-64 Intel and AMD processors which may even not reached the market yet.</p>
+</blockquote>
+<p>Bochs 解释了所有的 x86 机器指令，当然是 hardware specific 的，同时也支持所有的外设（有相应的设备模式）。</p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZXByb2plY3R6ZXJvL2JvY2hzcHduXShodHRwczovL2dpdGh1Yi5jb20vZ29vZ2xlcHJvamVjdHplcm8vYm9jaHNwd24=" title="https://github.com/googleprojectzero/bochspwn](https://github.com/googleprojectzero/bochspwn">bochspwn<i class="fa fa-external-link"></i></span>就是利用 Bochs 来分析 OS runtime 信息的一种应用。</p>
+<blockquote>
+<p>Perhaps your objective is to debug software or hardware drivers. Bochs offers a <strong>controlled environment</strong> that can better assist you in determining cause and effect relationships. You can take <strong>snapshots</strong> that show you what is going on behind the scenes. You can <strong>isolate</strong> the line that caused that crash. You can have multiple images and compare them under a microscope. In these situation, Bochs could save you time and resources.</p>
+</blockquote>
+<p>这一点正是我们想要的，和 docker 这种依赖于 Host kernel 的虚拟化不同，Bochs 还原了所有的机器指令，并且不像 VMWare 或 Virtual Box 这些主流的虚拟机做了优化，因此便于调试和探索。</p>
+<blockquote>
+<p>Bochs will run on Windows, GNU/Linux, FreeBSD, OpenBSD, or MacOSX. If you are running on x86 hardware, you have a range of choices. Check the installation section for your host platform to see what options Bochs supports on your platform. If the most important factor is speed, you may want to try a virtualization product instead of Bochs (VMware, VirtualBox, QEMU).</p>
+</blockquote>
+<p>之前本来想用 qemu 来做这个，但现在看来似乎 QEMU 也做了一些优化，如果 Bochs 的插件实现难度过大再转 QEMU 吧。</p>
+<h1 id="Bochs-基本用法"><a href="#Bochs-基本用法" class="headerlink" title="Bochs 基本用法"></a>Bochs 基本用法</h1><ul>
+<li><span class="exturl" data-url="aHR0cDovL3NvdXJjZWZvcmdlLm5ldC9wcm9qZWN0cy9ib2Nocy9maWxlcy9ib2Nocw==" title="http://sourceforge.net/projects/bochs/files/bochs">All Release Site<i class="fa fa-external-link"></i></span></li>
+</ul>
+<p>因为要编译的缘故，所以这里下载的是 <code>.tar.gz</code> 结尾的压缩包。解压之后，需要参考 Bochs 官方网站的编译指令来进行编译。</p>
+<ul>
+<li><span class="exturl" data-url="aHR0cDovL2JvY2hzLnNvdXJjZWZvcmdlLm5ldC9kb2MvZG9jYm9vay91c2VyL2NvbXBpbGluZy5odG1s" title="http://bochs.sourceforge.net/doc/docbook/user/compiling.html">编译指令详解<i class="fa fa-external-link"></i></span></li>
+</ul>
+<h2 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h2><p>可以通过 <code>config</code>,  <code>make</code>, <code>make install</code> 来进行编译安装。具体指令参考 <span class="exturl" data-url="aHR0cDovL2JvY2hzLnNvdXJjZWZvcmdlLm5ldC9jZ2ktYmluL3RvcHBlci5wbD9uYW1lPU5ldytCb2NocytEb2N1bWVudGF0aW9uJnVybD1odHRwOi8vYm9jaHMuc291cmNlZm9yZ2UubmV0L2RvYy9kb2Nib29rL3VzZXIvaW5kZXguaHRtbA==" title="http://bochs.sourceforge.net/cgi-bin/topper.pl?name=New+Bochs+Documentation&url=http://bochs.sourceforge.net/doc/docbook/user/index.html">Bochs 官方网站关于编译的说明<i class="fa fa-external-link"></i></span></p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><span class="exturl" data-url="aHR0cDovL2JvY2hzLnNvdXJjZWZvcmdlLm5ldC8=" title="http://bochs.sourceforge.net/">http://bochs.sourceforge.net/<i class="fa fa-external-link"></i></span></p>
+]]></content>
+      <categories>
+        <category>Tools</category>
+      </categories>
+      <tags>
+        <tag>Bochs</tag>
+        <tag>Linux Kernel</tag>
+        <tag>x86</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>wllvm-linux-kernel-no-optimize</title>
     <url>/2020/03/31/wllvm-linux-kernel-no-optimize/</url>
     <content><![CDATA[<p>试验性的将 Linux kernel 5.4 用 wllvm 编成 vmlinux，且优化参数为 <code>O0</code>。</p>
@@ -413,8 +542,8 @@
         <category>Tools</category>
       </categories>
       <tags>
-        <tag>vscode</tag>
         <tag>Linux Kernel</tag>
+        <tag>vscode</tag>
       </tags>
   </entry>
   <entry>
@@ -917,8 +1046,8 @@
         <category>Container</category>
       </categories>
       <tags>
-        <tag>golang</tag>
         <tag>llvm</tag>
+        <tag>golang</tag>
       </tags>
   </entry>
   <entry>
@@ -981,8 +1110,8 @@
         <category>Golang</category>
       </categories>
       <tags>
-        <tag>golang</tag>
         <tag>llvm</tag>
+        <tag>golang</tag>
       </tags>
   </entry>
   <entry>
