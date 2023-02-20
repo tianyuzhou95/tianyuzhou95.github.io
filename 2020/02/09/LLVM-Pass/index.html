@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="A guidline for write and compile LLVM Pass">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Write a LLVM Pass">
+<meta property="og:url" content="https://tianyuzhou.top/2020/02/09/LLVM-Pass/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="A guidline for write and compile LLVM Pass">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-09T14:12:12.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.472Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="llvm">
+<meta property="article:tag" content="c++">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://tianyuzhou.top/2020/02/09/LLVM-Pass/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>Write a LLVM Pass | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2020/02/09/LLVM-Pass/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Write a LLVM Pass
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-02-09 22:12:12" itemprop="dateCreated datePublished" datetime="2020-02-09T22:12:12+08:00">2020-02-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Language/" itemprop="url" rel="index"><span itemprop="name">Language</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Language/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">A guidline for write and compile LLVM Pass</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>如何写一个简单的 LLVM Pass，并编译和运行该 Pass，这篇文章给出了简要介绍。包括 LLVM 官网的 Hello Pass，指令操作数统计和循环内 basic block 统计。</p>
+<a id="more"></a>
+
+<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p><strong>LLVM Pass</strong> 是 LLVM 项目中很重要的一个部分。当我们使用 <code>clang -c -emit-llvm</code> 指令将 C/C++ 代码编译成 LLVM IR 之后，该如何利用这些 bitcode 呢？就轮到 Pass 出场了。</p>
+<p>在我的理解里，LLVM Pass 其实是一个 C++ 的类，即 <code>class Pass {}</code>。我们写的 Pass 就继承于 LLVM 自带的一些 Passes，比如 <span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzL1dyaXRpbmdBbkxMVk1QYXNzLmh0bWwjd3JpdGluZy1hbi1sbHZtLXBhc3MtbW9kdWxlcGFzcw==" title="https://llvm.org/docs/WritingAnLLVMPass.html#writing-an-llvm-pass-modulepass">ModulePass<i class="fa fa-external-link"></i></span> 或者是 <span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzL1dyaXRpbmdBbkxMVk1QYXNzLmh0bWwjd3JpdGluZy1hbi1sbHZtLXBhc3MtZnVuY3Rpb25wYXNz" title="https://llvm.org/docs/WritingAnLLVMPass.html#writing-an-llvm-pass-functionpass">FunctionPass<i class="fa fa-external-link"></i></span>。简单来讲，之所以叫做 Pass，是因为在运行它的时候，Pass 会按照<strong>特定的结构</strong>进行遍历。以 FunctionPass 为例，如果我们写的 Pass 继承 FunctionPass 类，那么在运行该 Pass 时会按照 LLVM IR 中的每个函数进行遍历，我们可以针对每个函数进行操作，比如获取该函数的名称（如下文讲到的 HelloPass）。</p>
+<p>要运行 LLVM Pass，必须要获取 LLVM IR，同时也需要相应的 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2xsdm0vbGx2bS1wcm9qZWN0LmdpdA==" title="https://github.com/llvm/llvm-project.git">LLVM Source Code<i class="fa fa-external-link"></i></span>，这里需要指出的是，<strong>如果采用编译 Pass 的方法是依赖于 LLVM Source Code 的，那么需要将该 Source Code 编译并安装一遍，再添加我们自己写的 Pass 目录和文件，否则会出现缺失头文件无法编译的情况。</strong></p>
+<p>如果是外部编译，也可能出现类似的问题，可能可以尝试用编译安装 LLVM Source Code 的方法解决。</p>
+<p>文章后续介绍的 Pass 编译方法都是依赖于 Source Code 的，如果想要尝试外部编译，可以参考 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NS9sbHZtLXR1dG9y" title="https://github.com/tianyuzhou95/llvm-tutor">llvm-tutor<i class="fa fa-external-link"></i></span> 这个项目。</p>
+<h2 id="Hello-Pass"><a href="#Hello-Pass" class="headerlink" title="Hello Pass"></a>Hello Pass</h2><p>由于是第一个 Pass，因此对于项目构建进行较为详细的说明。</p>
+<p>参考官网的<span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzL0dldHRpbmdTdGFydGVkLmh0bWw=" title="https://llvm.org/docs/GettingStarted.html">构建说明<i class="fa fa-external-link"></i></span>，在下载、编译并安装 LLVM 最新的版本之后（我使用的是 LLVM 11），我们再回到LLVM Source Code 目录下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">llvm-project&#x2F;</span><br><span class="line">├── build&#x2F;</span><br><span class="line">...</span><br><span class="line">├── llvm&#x2F;</span><br><span class="line">└── pstl&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>这里我省略了部分文件夹，找到 Source Code 根目录下的 <code>llvm/</code> 目录，我们需要在 <code>llvm-project/llvm/lib/Transforms/</code> 目录下新建目录 <code>TestHello/</code>，名字自取，当然由于已经存在了 <code>Hello/</code>  目录，因而不可以重名。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">llvm-project&#x2F;</span><br><span class="line">   ├── llvm&#x2F;</span><br><span class="line">      ├── lib&#x2F;</span><br><span class="line">         ├── Transforms&#x2F;</span><br><span class="line">            ├── CMakeLists.txt</span><br><span class="line">            ├── TestHello&#x2F;</span><br><span class="line">               ├── hello_test.cpp</span><br><span class="line">               └── CMakeLists.txt</span><br></pre></td></tr></table></figure>
+
+<p>主要文件和目录的结构如上图所示，我们需要新建的有目录 <code>TestHello/</code>，C++ 文件 <code>hello_test.cpp</code> 和 cmake 构建信息 <code>CMakeLists.txt</code>。同时上级目录 <code>Transforms/</code> 中的  <code>CMakeLists.txt</code> 也需要改动。</p>
+<p>首先是 <code>hello_test.cpp</code> 中的内容<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NS9sbHZtLXByb2plY3QvYmxvYi9tYXN0ZXIvbGx2bS9saWIvVHJhbnNmb3Jtcy9UZXN0UGFzcy9UZXN0UGFzcy5jcHA=" title="https://github.com/tianyuzhou95/llvm-project/blob/master/llvm/lib/Transforms/TestPass/TestPass.cpp">（参考 GitHub）<i class="fa fa-external-link"></i></span>。</p>
+<p>我将逐一讲述每个部分代码的意义，稍显冗长但是因为是第一次构建所以还是有必要的。</p>
+<p>首先是 namespace 的使用。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> llvm;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里因为是编写 LLVM Pass，所以使用的 namespace 为 llvm，可以看到后续的代码都置于一个匿名 namespace 中，目的是编写的这些代码仅仅能够在该文件当中才能运行，实现了较好的隔离性，除该文件外的任何代码都无法访问到该匿名空间内的所有函数和变量。</p>
+<p>接下来看 namespace 中定义的结构和函数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">TestPass</span> :</span> <span class="keyword">public</span> FunctionPass &#123;</span><br></pre></td></tr></table></figure>
+
+<p>我们定义的 Pass 的名称为 TestPass，继承自 FunctionPass 类，当然这里的 <code>public</code> 是为了编程规范，因为 c++ struct 默认的继承就是公有继承。FunctionPass 的特点是按照 LLVM IR 中的函数进行遍历，每次操纵的对象都是单个函数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> ID;</span><br><span class="line">TestPass() : FunctionPass(ID) &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在结构体中需要定义一个 <code>static char ID</code> 变量，同时在构造函数中套用 FunctionPass 的构造函数进行初始化。这个 <code>ID</code> 是所有 Pass 都具有的标识符，因此每次编写 Pass 的时候都需要。</p>
+<p>由于没有其他的结构变量，所以在这里不需要对构造函数进行改动。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">runOnFunction</span><span class="params">(Function &amp;F)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">    errs() &lt;&lt; <span class="string">"TestPass: "</span>;</span><br><span class="line">    errs().write_escaped(F.getName()) &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>runOnFunction()</code> 函数是本次 Pass 的<span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb3h5Z2VuL2NsYXNzbGx2bV8xXzFMUFBhc3NNYW5hZ2VyLmh0bWwjYTMyNTViMGIzYWI3OWFkMGQxYjkzY2UzZGE2NzVmMjQw" title="https://llvm.org/doxygen/classllvm_1_1LPPassManager.html#a3255b0b3ab79ad0d1b93ce3da675f240">核心函数<i class="fa fa-external-link"></i></span>，是 FunctionPass 提供的虚函数接口，它会在 <span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb3h5Z2VuL2dyb3VwX19MTFZNQ0NvcmVQYXNzTWFuYWdlcnMuaHRtbA==" title="https://llvm.org/doxygen/group__LLVMCCorePassManagers.html">LLVM Pass Manager<i class="fa fa-external-link"></i></span> 遍历每个函数的时候调用。</p>
+<p>在这里我们做的操作很简单，就是将函数名称打印在标准错误输出上，即显示在 terminal 中。</p>
+<p>这里的返回值为 <code>false</code>，因为我们没有对 LLVM IR 做任何的改动，如果我们编写的 Pass 改写了 IR，那么就需要返回 <code>true</code>。</p>
+<p>接下来后续的 Pass 会对这里的函数引用 <code>Function &amp;F</code> 做更多的操作，更多的函数参考 LLVM 官方文档即可，我的经验是 Google 就行。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> TestPass::ID = <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="keyword">static</span> RegisterPass&lt;TestPass&gt; <span class="title">X</span><span class="params">(<span class="string">"testpass"</span>, <span class="string">"Hello Test Pass"</span>, <span class="literal">false</span>, <span class="literal">true</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>这段是将我们编写的 Pass 初始化，并注册到 LLVM 的 Pass 集合中，这里有四个参数，第一个参数是命令行调用该 Pass 时的参数，在后续的运行指令中可以看到；第二个参数是 <code>--help</code> 时打印的参数说明。</p>
+<blockquote>
+<p>The last two arguments describe its behavior: if a pass walks CFG without modifying it then the third argument is set to <code>true</code>; if a pass is an analysis pass, for example dominator tree pass, then <code>true</code> is supplied as the fourth argument.</p>
+</blockquote>
+<p>后两个参数是有关 CFG 改动和 Analysis Pass 的，在这里不作过多说明，详细的可以参照<span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzL1dyaXRpbmdBbkxMVk1QYXNzLmh0bWw=" title="https://llvm.org/docs/WritingAnLLVMPass.html">官网<i class="fa fa-external-link"></i></span>。</p>
+<p><strong>这些 code 是必不可少的</strong>，每一个 Pass 都需要做这些。</p>
+<p>接下来的 <code>RegisterStandardPasses</code> 部分是<strong>可选的</strong>，一般我们都放上，可以更快的调用该 Pass。</p>
+<p>写完了 <code>hello_test.cpp</code>，我们开始编写同目录下的 <code>CMakeLists.txt</code>。</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">add_llvm_library( LLVMHelloTestPass MODULE</span><br><span class="line">  hello_testcpp</span><br><span class="line"></span><br><span class="line">  PLUGIN_TOOL</span><br><span class="line">  opt</span><br><span class="line">  )</span><br></pre></td></tr></table></figure>
+
+<p>大概的介绍下就是将该 cpp 文件添加到 LLVM 的构建项目中，从而使得在编译 LLVM Project 的时候可以编译该 Pass。</p>
+<p>由于添加了这个新的目录，因此在上级目录的 <code>CMakeLists.txt</code> 中同样需要做出改动。</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">add_subdirectory</span>(Utils)</span><br><span class="line">...</span><br><span class="line"><span class="keyword">add_subdirectory</span>(TestHello)</span><br></pre></td></tr></table></figure>
+
+<p>需要在文件中增加一行 <code>add_subdirectory(${your/dir/name})</code> 加上新添加的目录名称。</p>
+<p>全部做完之后，再回到之前编译 LLVM 时建立的 <code>build/</code> 目录下，使用当时构建的工具再构建一次并安装相应的库即可。之后我们就会在安装目录下找到一个新的动态链接库，如果是 Linux 的系统中，那么是以 <code>.so</code> 结尾，Mac OS 中是以 <code>.dylib</code> 结尾。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls /your/llvm/install/path/lib/*.dylib</span></span><br><span class="line">/your/llvm/install/path/lib/LLVMHelloTestPass.dylib</span><br></pre></td></tr></table></figure>
+
+<p>有了这个动态链接库，就可以在 LLVM 上跑我们写的 Hello Pass 了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> opt -load /your/llvm/install/path/lib/LLVMHelloTestPass.dylib --testpass -<span class="built_in">disable</span>-output main.ll</span></span><br><span class="line">TestPass: add</span><br><span class="line">TestPass: minus</span><br><span class="line">TestPass: multiply</span><br><span class="line">TestPass: divide</span><br><span class="line">TestPass: main</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>--testpass</code> 参数可以用 <code>--help</code> 找到。<code>-disable-output</code> 是用来避免输出 bitcode 的。</p>
+<p>同时还可以使用 <code>--debug-pass=Structure</code> 来看调用了哪些 LLVM 组建，具体的参数还是去 LLVM 官网上搜索为好。</p>
+<p>至此一个基本的 LLVM Pass 就已经介绍完毕了，包括从构建到编译运行的一系列过程。</p>
+<h2 id="CountOpPass-Basic-Block"><a href="#CountOpPass-Basic-Block" class="headerlink" title="CountOpPass - Basic Block"></a>CountOpPass - Basic Block</h2><p>之前介绍过的基本的 Pass 的概念就不作赘述了，这里就简单的介绍一下操作数统计的 Pass。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">runOnFunction</span><span class="params">(Function &amp;F)</span> </span>&#123;</span><br><span class="line">    errs() &lt;&lt; <span class="string">"Function "</span> &lt;&lt; F.getName() &lt;&lt; <span class="string">"\n"</span>;</span><br><span class="line">    <span class="keyword">for</span> (Function::iterator bb = F.<span class="built_in">begin</span>(), e = F.<span class="built_in">end</span>(); bb != e; bb++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (BasicBlock::iterator i = bb-&gt;<span class="built_in">begin</span>(), ei = bb-&gt;<span class="built_in">end</span>(); i != ei; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (opCounter.<span class="built_in">find</span>(i-&gt;getOpcodeName()) == opCounter.<span class="built_in">end</span>()) &#123;</span><br><span class="line">                <span class="comment">// not record, so insert an entry</span></span><br><span class="line">                opCounter[i-&gt;getOpcodeName()] = <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// add num</span></span><br><span class="line">                opCounter[i-&gt;getOpcodeName()] += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// go through and print</span></span><br></pre></td></tr></table></figure>
+
+<p>之所以想在这里介绍这个 Pass，是因为想引入 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQmFzaWNfYmxvY2s=" title="https://en.wikipedia.org/wiki/Basic_block">Basic Blocks<i class="fa fa-external-link"></i></span> 这个概念。在可读的 LLVM IR 中我们可以发现，所有代码都是按照 instruction -&gt; basic block -&gt; function -&gt; module 的顺序来组织的。指令很好理解，这个 basic block 就是一段顺序执行指令的最大子集。举个例子，如果一个函数当中存在 if/else 语句，那么在 LLVM IR 中，从函数开始到 if 语句判断，就是第一个 basic block。basic block 当中所有的指令都是顺序执行的。</p>
+<p>在上述代码中可以看到，利用 <code>Function &amp;F</code> 遍历函数内部的每一个 basic block，再在 basic block 中遍历每一条 instruction，从而得到了操作数的统计。</p>
+<h2 id="LoopBBCountPass-getAnalysisUsage"><a href="#LoopBBCountPass-getAnalysisUsage" class="headerlink" title="LoopBBCountPass - getAnalysisUsage"></a>LoopBBCountPass - getAnalysisUsage</h2><p>这个 Pass 计算了每个 loop 中 basic block 的数目。</p>
+<p>之所以要引入这个 Pass，是因为它使用了其他的 Pass 来辅助分析。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">getAnalysisUsage</span><span class="params">(AnalysisUsage &amp;AU)</span> <span class="keyword">const</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">    AU.addRequired&lt;LoopInfoWrapperPass&gt;();</span><br><span class="line">    AU.setPreservesAll();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当我们自己编写的 Pass 需要引入其他 Pass 时，必须如上述代码所示，使用 <code>getAnalysisUsage()</code> 来引入需要的 Pass，这里引入的是 LoopInfoWrapperPass，借助它可以获取函数当中循环体的信息。</p>
+<p>关于 getAnalysis 的信息，<span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzL1dyaXRpbmdBbkxMVk1QYXNzLmh0bWwjZXhhbXBsZS1pbXBsZW1lbnRhdGlvbnMtb2YtZ2V0YW5hbHlzaXN1c2FnZQ==" title="https://llvm.org/docs/WritingAnLLVMPass.html#example-implementations-of-getanalysisusage">官网<i class="fa fa-external-link"></i></span>也给出了例子。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">runOnFunction</span><span class="params">(Function &amp;F)</span> </span>&#123;</span><br><span class="line">    LoopInfo &amp;LI = getAnalysis&lt;LoopInfoWrapperPass&gt;().getLoopInfo();</span><br><span class="line">    <span class="keyword">int</span> loopCounter = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (LoopInfo::iterator i = LI.<span class="built_in">begin</span>(), e = LI.<span class="built_in">end</span>(); i != e; i++) &#123;</span><br><span class="line">        countBlocksInLoop(*i, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过利用 LoopInfoWrapperPass 得到的循环体信息，就可以通过递归调用函数来获取该循环体、子孙循环体的 basic block 信息，即 <code>countBlocksInLoop()</code> 函数的功能。具体的代码实现参考<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NS9sbHZtLXByb2plY3QvYmxvYi9iMDc4MjA2Yzk5Yzk4MTQ2ZjU2MzIyYzAxZDQyNDNjMzQzMjVjNWIzL2xsdm0vbGliL1RyYW5zZm9ybXMvQkJDb3VudEluTG9vcC9Db3VudF9CbG9ja3NfSW5fTG9vcHMuY3BwI0wyMQ==" title="https://github.com/tianyuzhou95/llvm-project/blob/b078206c99c98146f56322c01d4243c34325c5b3/llvm/lib/Transforms/BBCountInLoop/Count_Blocks_In_Loops.cpp#L21">我的 GitHub<i class="fa fa-external-link"></i></span>。</p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kb2NzLw==" title="https://llvm.org/docs/">LLVM Official Docs<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cuaW5mLmVkLmFjLnVrL3RlYWNoaW5nL2NvdXJzZXMvY3QvMTktMjAvc2xpZGVzL2xsdm0tMi13cml0aW5nX3Bhc3MucGRm" title="https://www.inf.ed.ac.uk/teaching/courses/ct/19-20/slides/llvm-2-writing_pass.pdf">llvm-2-writing_pass<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9sbHZtLm9yZy9kZXZtdGcvMjAxOS0xMC9zbGlkZXMvV2Fyenluc2tpLVdyaXRpbmdBbkxMVk1QYXNzLnBkZg==" title="https://llvm.org/devmtg/2019-10/slides/Warzynski-WritingAnLLVMPass.pdf">Warzynski-WritingAnLLVMPass<i class="fa fa-external-link"></i></span></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/llvm/" rel="tag"># llvm</a>
+              <a href="/tags/c/" rel="tag"># c++</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/12/gVisor-to-LLVM-IR/" rel="prev" title="Gollvm Compile gVisor To LLVM IR">
+      <i class="fa fa-chevron-left"></i> Gollvm Compile gVisor To LLVM IR
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/02/26/ss-ubuntu/" rel="next" title="ss and obfs Configuration in Ubuntu 18.04">
+      ss and obfs Configuration in Ubuntu 18.04 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hello-Pass"><span class="nav-number">2.</span> <span class="nav-text">Hello Pass</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CountOpPass-Basic-Block"><span class="nav-number">3.</span> <span class="nav-text">CountOpPass - Basic Block</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LoopBBCountPass-getAnalysisUsage"><span class="nav-number">4.</span> <span class="nav-text">LoopBBCountPass - getAnalysisUsage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

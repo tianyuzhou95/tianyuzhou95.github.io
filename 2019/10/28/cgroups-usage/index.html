@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="a translation of linux cgroup man page">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cgroup usage">
+<meta property="og:url" content="https://tianyuzhou.top/2019/10/28/cgroups-usage/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="a translation of linux cgroup man page">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-28T14:12:12.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.473Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="cgroup">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://tianyuzhou.top/2019/10/28/cgroups-usage/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>cgroup usage | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2019/10/28/cgroups-usage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cgroup usage
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-28 22:12:12" itemprop="dateCreated datePublished" datetime="2019-10-28T22:12:12+08:00">2019-10-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">a translation of linux cgroup man page</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这篇 blog 是关于 linux cgroup man 的翻译，也加上了我的个人理解，具体的细节请结合官方的 <span class="exturl" data-url="aHR0cDovL21hbjcub3JnL2xpbnV4L21hbi1wYWdlcy9tYW43L2Nncm91cHMuNy5odG1s" title="http://man7.org/linux/man-pages/man7/cgroups.7.html">cgroup man page<i class="fa fa-external-link"></i></span> 来理解，当前我研究的 cgroup 一共有 2 个版本，v1 和 v2，这两个版本的 cgroup 在架构和功能上有较大的不同，具体内容会在下面的文章当中说明，<strong>当前版本的 kernel 是 5.3.8</strong>，具体研究的时候请参照最新的<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9Eb2N1bWVudGF0aW9uL2FkbWluLWd1aWRlL2Nncm91cC12Mi5yc3Q=" title="https://elixir.bootlin.com/linux/latest/source/Documentation/admin-guide/cgroup-v2.rst">说明文档<i class="fa fa-external-link"></i></span>来看。</p>
+<a id="more"></a>
+
+<h2 id="Name"><a href="#Name" class="headerlink" title="Name"></a>Name</h2><p>cgroups - Linux control groups</p>
+<h2 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h2><p>cgroups，全名是 control groups，是 linux 用来监控和限制进程资源的 feature。linux kernel 的 cgroup interface 是名为 cgroupfs 的伪文件系统，类似 proc。之所以叫做 control groups，是因为将每个进程分到不同的 group 中去，按照 group 来对资源进行控制。每个资源（cpu、memory等）都是由单独的控制器 controller 来控制的。</p>
+<h3 id="Terminology"><a href="#Terminology" class="headerlink" title="Terminology"></a>Terminology</h3><p>cgroup 是一组通过 cgroup filesystem 来定义的，具有特定资源限制的进程 group。</p>
+<p>subsystem 也叫做 resource controllers，是用来控制特定 cgroup 中进程资源使用的 kernel 组件。 </p>
+<p>cgroup 的资源控制是通过 hierarchy 的方式组织的。后续也会详细说明，cgroup 的 hierarchy 具体表现为文件目录树，方才也提到 cgroup 在 linux 当中的交互是通过一个虚拟文件系统来实现的，此处的 hierarchy 就很像文件系统的目录层次结构。</p>
+<p>我们可以创建、删除和重命名 cgroup 目录下的各个文件目录，而这些文件目录的名称，正是 cgroup 的名称。通过设置这些文件目录的当中文件的值，来控制之前提到的 controller 的行为。另外，cgroup 的资源访问的等级是自上而下的，意思就是说，任何 cgroup 的资源访问区域都不能够大于他们的祖先节点，也就是祖先文件目录。</p>
+<p>为了较为形象的来描述这个 hierarchy 在 linux 当中的表现形式，可以使用 <code>tree -d -L 2 /sys/fs/cgroup/</code> 来查看 cgroup 的目录结构，此处为了观察方便，我们省略了 2 层以上的子目录。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">/sys/fs/cgroup/</span><br><span class="line">├── blkio</span><br><span class="line">│   ├── docker</span><br><span class="line">│   ├── system.slice</span><br><span class="line">│   └── user.slice</span><br><span class="line">├── cpuset</span><br><span class="line">│   └── docker</span><br><span class="line">├── ...</span><br><span class="line">└── unified</span><br><span class="line">    ├── init.scope</span><br><span class="line">    ├── system.slice</span><br><span class="line">    └── user.slice</span><br></pre></td></tr></table></figure>
+
+<p>从上面可以看到，<code>/sys/fs/cgroup</code> 目录下面由很多文件，其中除了 <code>systemd</code> 和 <code>unified</code> 文件夹之外，都是用于 cgroup v1 的 controller 目录。</p>
+<h3 id="Cgroups-v1-and-v2"><a href="#Cgroups-v1-and-v2" class="headerlink" title="Cgroups v1 and v2"></a>Cgroups v1 and v2</h3><p>一开始 linux kernel 当中仅存在 cgroup v1，随着后续的开发，不断的有新的 controller 引入，因而整个 cgroup 体系变得非常的复杂，因为一开始的设计存在缺陷，所以在 linux 3.10 开始开发人员就着手设计新版的 cgroup，<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9Eb2N1bWVudGF0aW9uL2FkbWluLWd1aWRlL2Nncm91cC12Mi5yc3Q=" title="https://elixir.bootlin.com/linux/latest/source/Documentation/admin-guide/cgroup-v2.rst">cgroup v2<i class="fa fa-external-link"></i></span> 在 linux 4.5 正式上线，接下来的文章里面会有详细的关于这两个版本的分析。</p>
+<p>在这里仅简要的介绍一下这两个版本在 hierarchy 上的区别。</p>
+<p>以 cpuset 为例，下列是 v1 的设置方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">      &quot;Top cpuset&quot;    &lt;-----  &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;cpuset&#x2F;</span><br><span class="line">        &#x2F;       \</span><br><span class="line">CPUSet1         CPUSet2</span><br><span class="line">   |               |</span><br><span class="line">(Professors)    (Students)</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>cpuset/</code> 目录下新建两个目录，这两个目录分别表示 2 个不同的 cgroup，在 cgroup v1 当中，针对不同的 controller 都要有不同的 cgroup，而当我们要限制进程的 cpuset 时，只需要把进程和特定的 cgroup 绑定即可，在这里，professor 进程绑定了 CPUSet1，而 Students 进程绑定了 CPUSet2。</p>
+<p>而对于 v2 而言，并没有针对每个 controller 设定不同的 cgroup，而是统一设立 cgroup，对每个 cgroup 设定不同的 controller limitation 即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">         &quot;class&quot;</span><br><span class="line">        &#x2F;       \</span><br><span class="line">cg_Professors  cg_Students</span><br><span class="line">   |               |</span><br><span class="line">cpuset: 0       cpuset: 1</span><br></pre></td></tr></table></figure>
+
+<p>如上所示，cg_Professors 和 cg_Students 为不同的 cgroup，针对这两个 cgroup 设定不同的 controller 值，然后再把具体的 process 绑定到这两个 cgroup 上即可。</p>
+<blockquote>
+<p>Currently, cgroups v2 implements only a subset of the controllers available in cgroups v1.</p>
+</blockquote>
+<p>当前 kernel 当中两个版本的 cgroup 是并存的，而且出于 compile 的考虑，并不会将 cgroup v1 移除。在当前系统当中对于 cgroup 的应用也是并存的，但对于那些被 v2 implements 的 controller，只能选择应用 v1 或者 v2，而不能够两个版本同时使用。</p>
+<h2 id="Croups-Version-1"><a href="#Croups-Version-1" class="headerlink" title="Croups Version 1"></a>Croups Version 1</h2><p>cgroup v1 每个 controller 对应一个 cgroup，也就是说，对于不同的 controller 可以有不同的 cgroup 去控制，当然，也可以为 多个 controller 设置同一个 cgroup。在上文当中，有介绍可以使用 <code>tree -d -L 2 /sys/fs/cgroup/</code> 来查看 cgroup 的目录结构，这里再次用它作为例子</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> tree -d -L 3 /sys/fs/cgroup/</span></span><br><span class="line">/sys/fs/cgroup/</span><br><span class="line">├── blkio</span><br><span class="line">│   ├── docker</span><br><span class="line">│   ├── system.slice</span><br><span class="line">│   │   ├── accounts-daemon.service</span><br><span class="line">│   │   └── ...</span><br><span class="line">│   └── user.slice</span><br><span class="line">├── cpu -&gt; cpu,cpuacct</span><br><span class="line">├── cpuacct -&gt; cpu,cpuacct</span><br><span class="line">├── cpu,cpuacct</span><br><span class="line">│   ├── docker</span><br><span class="line">│   ├── system.slice</span><br><span class="line">│   │   ├── accounts-daemon.service</span><br><span class="line">│   │   └── ...</span><br><span class="line">│   └── user.slice</span><br><span class="line">└── ....</span><br></pre></td></tr></table></figure>
+
+<p>为了方便观察，我设置只显示了 3 层文件目录。在上图中可以看到，<code>cpu/</code>、<code>cpuacct/</code> 都是link，它们 link 到了同一个目录 <code>cpu,cpuacct/</code>，这就是多个 controller 共同对应一个 cgroup 的例子。前文中也说过，cgroup 提供了虚拟文件系统，这些文件目录就是 cgroup 在内核中 hierarchy 的镜像。每个文件夹对应一个特定的 cgroup，它们的子文件夹就是 child cgroup，父文件夹就是 parent cgroup。</p>
+<h3 id="Tasks-threads-vs-processes"><a href="#Tasks-threads-vs-processes" class="headerlink" title="Tasks (threads) vs processes"></a>Tasks (threads) vs processes</h3><p>在 cgroup v1 当中，进程 processes 和线程 threads 的 cgroup 是可以区分对待的。一个 process 可以有多个 threads，在 cgroup v1 当中，我们可以独立控制每个 thread 的 cgroup。</p>
+<p>然而在这个模型当中，对每个 thread 进行 cgroup 分配会出现一些问题，比如对于 memory 来讲，同一个 process 的不同 thread 是共享内存地址空间的， 对这些进程分别应用不同的 memory controllers 是毫无意义的。</p>
+<p>因此在 cgroup v2 当中，独立操控 thread 级别的 cgroup 功能被移除了，相对的，为了精准控制多线程的情况，cgroup v2 引入了 <em>thread model</em>，在后续会进一步详细叙述。</p>
+<h3 id="Mounting-v1-controllers"><a href="#Mounting-v1-controllers" class="headerlink" title="Mounting v1 controllers"></a>Mounting v1 controllers</h3><p>在 Linux kernel 当中启用 cgroup 需要在 build 内核的过程中设置 <code>CONFIG_CGROUPS</code> 参数，我参考了 Linux 5.3 的 <code>/.config</code> 文件，发现关于 cgroup 的设定如下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CONFIG_CGROUPS=y</span><br><span class="line">CONFIG_CGROUP_SCHED=y</span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_PIDS is not <span class="built_in">set</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_RDMA is not <span class="built_in">set</span></span></span><br><span class="line">CONFIG_CGROUP_FREEZER=y</span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_HUGETLB is not <span class="built_in">set</span></span></span><br><span class="line">CONFIG_CPUSETS=y</span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_DEVICE is not <span class="built_in">set</span></span></span><br><span class="line">CONFIG_CGROUP_CPUACCT=y</span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_PERF is not <span class="built_in">set</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> CONFIG_CGROUP_DEBUG is not <span class="built_in">set</span></span></span><br></pre></td></tr></table></figure>
+
+<p>从上列设置中可以看到，<em>sched<em>、</em>freezer<em>、</em>cpusets<em>、</em>cpuacct</em> 这四个 controller 默认被启用了，而其余的并没有启用。</p>
+<p>我们可以通过 mount 指令来使用 cgroup</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount -t cgroup -o cpu none /sys/fs/cgroup/cpu</span></span><br></pre></td></tr></table></figure>
+
+<p>当然同时 mount 多个 controller 也是可以的，就像前文所说，可以指定多个 controller 共用同一个 cgroup。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount -t cgroup -o cpu,cpuacct none /sys/fs/cgroup/cpu,cpuacct</span></span><br></pre></td></tr></table></figure>
+
+<p>实际上在 <em>Linux 4.15.0-66-generic</em> 内核版本下，controller cpu 和 cpuacct 就是一同 mount 的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ll /sys/fs/cgroup/</span></span><br><span class="line">lrwxrwxrwx  1 root root  11 Oct 29 02:36 cpu -&gt; cpu,cpuacct/</span><br><span class="line">lrwxrwxrwx  1 root root  11 Oct 29 02:36 cpuacct -&gt; cpu,cpuacct/</span><br><span class="line">dr-xr-xr-x  5 root root   0 Oct 30 06:00 cpu,cpuacct/</span><br></pre></td></tr></table></figure>
+
+<p>对于一个特定的 process，它可以分 controller 对应不同的 cgroup，如 cpuset 对应 cg1，cpu 和 cpuacct 对应 cg2。然而同一个 controller 只能对应一个 cgroup，不可以对应多个 cgroup。</p>
+<p><strong>注意：</strong>许多 controller 都已经在 system boot 阶段就已经 mount 到了 <code>/sys/fs/cgourp/</code> 目录下，<code>systemd</code> 亦然。</p>
+<h3 id="Unmounting-v1-controllers"><a href="#Unmounting-v1-controllers" class="headerlink" title="Unmounting v1 controllers"></a>Unmounting v1 controllers</h3><p>一个已经挂载的 cgroup 文件系统，可以被卸载，如现在要卸载 pids controller 对应的 cgroup file system</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> unmount /sys/fs/cgroup/pids</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：</strong>只有在一个 cgroup 没有 child cgroups 的时候，才能够 unmount 它，即它没有其它子目录。当 remove 子目录（child cgroup）的时候，必须保证它控制的 process 都已经转移到 root cgroup 或者清除，否则也不能 remove。</p>
+<h3 id="Controllers"><a href="#Controllers" class="headerlink" title="Controllers"></a>Controllers</h3><p>每一个 cgroup v1 当中的 controller 在使用之前必须在 build kernel 的时候显式的设定 configuration option（后续列出），并且在这之上必须要设定 <code>CONFIG_CGROUPS</code> 参数。</p>
+<ul>
+<li><em>cpu</em> (<code>CONFIG_CGROUP_SCHED</code>)<ul>
+<li>设定一个在 cpu busy 时分到 cpu 资源的权重，权重越高，在竞争 cpu 资源时得到的越多</li>
+<li>当 enable <code>CONFIG_CFS_BANDWIDTH</code> 时，可以通过设定每个 scheduling period 的上限来限制 cpu 使用时间，即使 cpu 并没有 busy，被该 controller 控制的 process 也必须服从这一限制</li>
+</ul>
+</li>
+<li><em>cpuacct</em> (<code>CONFIG_CGROUP_CPUACCT</code>)<ul>
+<li>提供了对于一组 processes <strong>cpu 使用量的计算</strong></li>
+</ul>
+</li>
+<li><em>cpuset</em> (<code>CONFIG_CUPSETS</code>)<ul>
+<li>用来将 process 绑定到特定的 cpu 和 <span class="exturl" data-url="aHR0cHM6Ly93aGF0aXMudGVjaHRhcmdldC5jb20vZGVmaW5pdGlvbi9OVU1BLW5vbi11bmlmb3JtLW1lbW9yeS1hY2Nlc3M=" title="https://whatis.techtarget.com/definition/NUMA-non-uniform-memory-access">NUMA<i class="fa fa-external-link"></i></span> 节点上</li>
+</ul>
+</li>
+<li><em>memory</em> (<code>CONFIG_MEMCG</code>)<ul>
+<li>记录 report 和限制 limit 具体 cgroup 的 process memory，kernel memory 还有 swap 的使用</li>
+</ul>
+</li>
+<li><em>devices</em> (<code>devices</code>)<ul>
+<li>控制 process 对于设备的创建（<code>mknod</code>）、读和写</li>
+<li>通过 whitelist 或者是 blacklist 的形式来限制</li>
+<li>由于其 hierarchy 的结构，child cgroup 的设定必须不能和 ancestor cgroup 冲突</li>
+</ul>
+</li>
+<li><em>freezer</em> (<code>CONFIG_CGROUP_FREEZER</code>)<ul>
+<li>用来挂起和回复所有该 cgroup 控制的 processes，freeze 一个 cgroup 也会使它的 child cgroup frozen，即这个操作是递归的</li>
+</ul>
+</li>
+<li><em>net_cls</em> (<code>CONFIG_CGROUP_NET_CLASSID</code>)<ul>
+<li>该 controller 创建了一个 classid，这个 classid 和 cgroup 绑定，会在网络 packet 创建的时候用来匹配防火墙的规则</li>
+<li>它仅对从 cgroup 发出的 packet 做限制，而不限制外来的 packet</li>
+</ul>
+</li>
+<li><em>blkio</em> (<code>CONFIG_BLK_CGROUP</code>)<ul>
+<li>通过对存储层次结构中的叶节点和中间节点应用 I/O 控制（节流和上限）来控制和限制对指定块设备的访问</li>
+<li>两种策略，一种是设定权重，基于权重进行磁盘时间的划分；另一种是设定 I/O rate 上限</li>
+</ul>
+</li>
+<li><em>net_prio</em> (<code>CONFIG_CGROUP_NET_PRIO</code>)<ul>
+<li>设定网络的优先级</li>
+</ul>
+</li>
+<li><em>hugetlb</em> (<code>CONFIG_CGROUP_HUGETLB</code>)<ul>
+<li>限制 huge pages 的使用</li>
+</ul>
+</li>
+<li><em>pids</em> (<code>CONFIG_CGROUP_PIDS</code>)<ul>
+<li>限制单个 cgroup 创建进程的个数</li>
+</ul>
+</li>
+<li><em>rdma</em> (<code>CONFIG_CGROUP_RDMA</code>)<ul>
+<li>限制 RDMA/IB-specific 资源的使用</li>
+</ul>
+</li>
+</ul>
+<h3 id="Creating-cgroups-and-moving-processes"><a href="#Creating-cgroups-and-moving-processes" class="headerlink" title="Creating cgroups and moving processes"></a>Creating cgroups and moving processes</h3><p>创建 cgroup 的方法很简单，类似新建目录</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mkdir /sys/fs/cgroup/cpu/cg1</span></span><br></pre></td></tr></table></figure>
+
+<p>上述语句创建了一个新的空的 cgroup。</p>
+<p>当然，对于 cgroup v1 来说，每个 cgroup 都有所属的 controller，因此当创建具体 controller 的 cgroup 时，根目录就必须为该 controller 在 <code>/sys/fs/cgroup/</code> 下的目录。</p>
+<p>通过将 PID 写入 <code>cgroup.procs</code> 可以将该进程加入特定的 cgroup</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">echo</span> $$ &gt; /sys/fs/cgroup/cpu/croup.procs</span></span><br></pre></td></tr></table></figure>
+
+<p>一次只能往该文件写入一个 PID。若写入的值是 <code>0</code> 那么将会把写入进程的 PID 添加到该文件当中。</p>
+<p>当写入进程已有对应的 cgroup 时，它原先所属的 cgroup 的 <code>cgroup.procs</code> 文件当中的记录将被移除，同时，所有属于该进程的 threads 的 TID 都会被添加到 <code>task</code> 文件当中。可以手动的将 TID 赋值给其它 cgroup 的 <code>task</code> 文件，此时该线程将会属于其他的 cgroup。</p>
+<h3 id="Removing-cgroups"><a href="#Removing-cgroups" class="headerlink" title="Removing cgroups"></a>Removing cgroups</h3><p>如果要 remove 一个 cgroup，必须保证它没有 child cgroups 且没有任何 processes (nozombie) 才能够成功的 remove。</p>
+<p><strong>注意：</strong>cgroup 目录下的文件不能也不需要被手动的移除。</p>
+<h3 id="Release-notification"><a href="#Release-notification" class="headerlink" title="Release notification"></a>Release notification</h3><p>在 cgroup 层次目录下面有两个文件是用来处理当某个 cgroup 为 empty 时的情况。当一个 cgroup 没有 child cgroup 且没有 member processes 的时候，它就成为了一个 empty cgroup。</p>
+<p>在每个 cgroup hierarchy 的根目录，比如上文中的 <code>/sys/fs/cgroup/cpu/</code>，有一个名为 <code>release_agent</code> 的文件，该文件初始值为空，可以在其中添加<strong>处理程序的路径</strong>。这里的处理程序是自己编写的，专门在 cgroup becomes empty 时使用的，当特定的 cgroup 变为 empty 时，release_agent 会自动执行路径当中的程序，并将 cgroup 对应的文件挂载点作为参数传递给该程序。</p>
+<p><code>release_agent</code> 文件的内容可以通过以下方式来声明</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount -o release_agent=pathname ...</span></span><br></pre></td></tr></table></figure>
+
+<p>若要在每次有 cgroup empty 出现的时候就触发该功能，需要再设定一个文件的值——<code>notify_on_release</code>，这个文件位于每一个 cgroup 的目录下，对应 <code>release_agent</code> 在该 cgroup 变为 empty 时的行为。当文件的值为 <strong>1</strong> 时， <code>release_agent</code> 文件才会启动，默认的值是 <strong>0</strong>。</p>
+<h3 id="Named-hierarchies"><a href="#Named-hierarchies" class="headerlink" title="Named hierarchies"></a>Named hierarchies</h3><p>cgroup 允许创建不和 controller 对应的 cgroup hierarchy，每个这样的 hierarchy 都要有唯一的名字。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount -t cgroup -o none,name=somename none /some/mount/point</span></span><br></pre></td></tr></table></figure>
+
+<p>像这样的 hierarchy 可以创建多个。cgroup 提供这种机制的原因是需要有 track process 的功能，比如 <code>name=systemd</code> cgroup hierarchy 就是用来 track services 和 user sessions 的。</p>
+<p>从 Linux 5.0 开始，可以通过设定 <code>cgroup_no_v1</code> 这个 kernel boot option 来禁用 cgroup v1 的相关功能，若要禁止 named hierarchy，声明 <code>cgroup_no_v1=named</code> 即可。</p>
+<h2 id="Cgroups-Version-2"><a href="#Cgroups-Version-2" class="headerlink" title="Cgroups Version 2"></a>Cgroups Version 2</h2><p>与 cgroup v1 不同的是，cgroup v2 的所有 controller 都位于同一个 hierarchy 中，在虚拟文件系统表示为同一个文件夹下。考虑到存在 cgroup v1 和 v2 共同使用的情况，不允许一个 controller 即属于 cgroup v1 又属于 v2。</p>
+<p>cgroup v2 的新特性如下所示，部分需要重点描述的将会在后续当中详细说明</p>
+<ol>
+<li>Cgroup v2 为所有 mounted controllers 提供了一个共同的 hierarchy。</li>
+<li><strong>Internal</strong> 进程不允许存在，简单的来说，除了 root cgroup 之外，所有的进程都只能绑定在 leaf nodes 上，所有既有 parent cgroup 又有 child cgroup 的 cgroup，都不能够有绑定的 process。具体的细节将会在后续给出。</li>
+<li>有效的 cgroups 必须通过 <em>cgroup.controllers</em> 和 <em>cgroup.subtrss_control</em> 来描述。</li>
+<li>原来存在于 cgroup 文件目录下的 <em>task</em> 文件被移除了，同时，为 cpuset controller 服务的 <em>cgroup.clone_children</em> 也被移除了。</li>
+<li>之前提到的 Release Notification 机制，现在通过 <em>cgroup.events</em> 文件来实现。</li>
+</ol>
+<p>更多关于 cgroup v2 的具体信息可以参考 Linux source code 中的 <a href="https://elixir.bootlin.com/linux/latest/source/Documentation/admin-guide/cgroup-v2.rst" target="_blank" rel="noopener"><code>cgroup-v2.rst</code></a> 文件。</p>
+<p>另外在 Linux 4.14 引入了 <strong><em>thread mode</em></strong>，也会在后续当中详细说明。</p>
+<h3 id="Unified-Hierarchy"><a href="#Unified-Hierarchy" class="headerlink" title="Unified Hierarchy"></a>Unified Hierarchy</h3><p>cgroup v1 之所以会让不同的 controllers 对应不同的 hierarchy，是因为想让应用的设计和开发更具灵活性，然而在实际的使用当中，非但没有增加灵活性，反而在很多情况里面增加了复杂度。因此在 cgroup v2 中移除了这个机制，所有支持 v2 的 controllers 被 mount 在了单一的 hierarchy 中。所有可用的 controllers 都会被自动挂载，也就意味着不需要（实际上也并不可能）通过以下语句去 mount controller</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount -t cgroup2 none /mnt/cgroup2</span></span><br></pre></td></tr></table></figure>
+
+<p>只有当一个 controller 不属于 cgroup v1 的 hierarchy 的时候，它才可以被 mount。换句话说，就是一个 controller 不能同时属于 v1 和 v2。当我们（v2）需要使用正被 v1 使用的 controller 时，要先将它 unmount。然而由于一些进程如 <span class="exturl" data-url="aHR0cDovL21hbjcub3JnL2xpbnV4L21hbi1wYWdlcy9tYW4xL3N5c3RlbWQuMS5odG1saHR0cDovL21hbjcub3JnL2xpbnV4L21hbi1wYWdlcy9tYW4xL3N5c3RlbWQuMS5odG1s" title="http://man7.org/linux/man-pages/man1/systemd.1.htmlhttp://man7.org/linux/man-pages/man1/systemd.1.html">systemd(1)<i class="fa fa-external-link"></i></span> 会频繁的使用一些 v1 的 controllers，最好的做法是改写 system boot command line，添加 <code>cgroup_no_v1=list</code>，其中 <code>list</code> 是需要禁止 v1 使用的 controllers 集合，或者可以用 <code>all</code> 表示所有的 controllers 都不能被 v1 使用。systemd(1) 可以自动的处理这种情况，即不再使用这些 controllers。</p>
+<p>事实上，现在许多现代操作系统里面，systemd(1) 自动 mount 了 cgroup2 file system，就位于根目录的 <code>/unified</code> 文件夹。在 <a href="#Terminology">Terminology</a> 一节中有显示出来。</p>
+<h3 id="Controllers-1"><a href="#Controllers-1" class="headerlink" title="Controllers"></a>Controllers</h3><p>支持 cgroup v2 的 controller </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">io          # successor of the v1 blkio</span><br><span class="line">memory      # successor of the v1 memory</span><br><span class="line">pids        # same as the v1 pids</span><br><span class="line">perf_event  # same as the v1 perf_event</span><br><span class="line">rdma        # same as the v1 rdma</span><br><span class="line">cpu         # successor of v1 cpu and cpuacct</span><br></pre></td></tr></table></figure>
+
+<p>具体可以参照官方文档的介绍 <a href="https://elixir.bootlin.com/linux/latest/source/Documentation/admin-guide/cgroup-v2.rst" target="_blank" rel="noopener"><code>cgroup-v2.rst</code></a>。</p>
+<h3 id="Subtree-control"><a href="#Subtree-control" class="headerlink" title="Subtree control"></a>Subtree control</h3><p>每个 cgroup v2 的 hierarchy 都包S含了以下两个文件</p>
+<ul>
+<li><em>cgroup.controllers</em><ul>
+<li>这是一个 read-only 文件，其中包含了对于该 cgroup available 的 controllers，它和 parent cgroup 目录当中的 cgroup.subtrr_control 文件内容相对应</li>
+</ul>
+</li>
+<li><em>cgroup.subtree_control</em><ul>
+<li>这是关于 active (enabled) controllers 的文件。这些 controllers 是 <em>cgroup.controllers</em> 文件当中 controllers 的一个子集，意思是不能够使用没有在 cgroup.controllers 文件当中声明的 controller。可以通过向文件写入 <code>+</code> 或 <code>-</code> 后面接上 controller 名字来 enable 或者 disable 特定的 controller，如下例子所示<ul>
+<li><code>$ echo &#39;+pids -memory&#39; &gt; x/y/cgroup.subtrr_control</code></li>
+</ul>
+</li>
+<li>如果想要 enable 的 controller 不在 <em>cgroup.controllers</em> 文件当中，那么在写入的时候会报错</li>
+</ul>
+</li>
+</ul>
+<p>因为所有在 <em>cgroup.subtree_control</em> 文件当中列出的 controllers 都是 <em>cgroup.controllers</em> 的子集，所以一旦一个 controller 在某个 cgroup 当中被禁用，那么在它的后续 subtree 当中是没有办法重新启用的。</p>
+<p>在 <em>cgroup.subtree_control</em> 文件中列出的 controller 将会在 child cgroup 当中使用，所以在一旦 controller 被添加到  <em>cgroup.subtree_control</em> 文件中，child cgroup 目录将会自动添加 controller 对应的 interface 文件，比如 <em>pids.max</em> 等。这些文件可以被 child cgroup 用来做特定的资源限制。</p>
+<h3 id="quot-no-internal-processes-quot-rule"><a href="#quot-no-internal-processes-quot-rule" class="headerlink" title="&quot;no internal processes&quot; rule"></a>&quot;no internal processes&quot; rule</h3>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cgroup/" rel="tag"># cgroup</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/22/echarts-in-markdown/" rel="prev" title="Use echarts in markdown">
+      <i class="fa fa-chevron-left"></i> Use echarts in markdown
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/11/06/Data-Mining-List/" rel="next" title="Data Mining Knowledge Points">
+      Data Mining Knowledge Points <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Name"><span class="nav-number">1.</span> <span class="nav-text">Name</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Description"><span class="nav-number">2.</span> <span class="nav-text">Description</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Terminology"><span class="nav-number">2.1.</span> <span class="nav-text">Terminology</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cgroups-v1-and-v2"><span class="nav-number">2.2.</span> <span class="nav-text">Cgroups v1 and v2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Croups-Version-1"><span class="nav-number">3.</span> <span class="nav-text">Croups Version 1</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Tasks-threads-vs-processes"><span class="nav-number">3.1.</span> <span class="nav-text">Tasks (threads) vs processes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mounting-v1-controllers"><span class="nav-number">3.2.</span> <span class="nav-text">Mounting v1 controllers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Unmounting-v1-controllers"><span class="nav-number">3.3.</span> <span class="nav-text">Unmounting v1 controllers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Controllers"><span class="nav-number">3.4.</span> <span class="nav-text">Controllers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Creating-cgroups-and-moving-processes"><span class="nav-number">3.5.</span> <span class="nav-text">Creating cgroups and moving processes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Removing-cgroups"><span class="nav-number">3.6.</span> <span class="nav-text">Removing cgroups</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Release-notification"><span class="nav-number">3.7.</span> <span class="nav-text">Release notification</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Named-hierarchies"><span class="nav-number">3.8.</span> <span class="nav-text">Named hierarchies</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cgroups-Version-2"><span class="nav-number">4.</span> <span class="nav-text">Cgroups Version 2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Unified-Hierarchy"><span class="nav-number">4.1.</span> <span class="nav-text">Unified Hierarchy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Controllers-1"><span class="nav-number">4.2.</span> <span class="nav-text">Controllers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Subtree-control"><span class="nav-number">4.3.</span> <span class="nav-text">Subtree control</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#quot-no-internal-processes-quot-rule"><span class="nav-number">4.4.</span> <span class="nav-text">&quot;no internal processes&quot; rule</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

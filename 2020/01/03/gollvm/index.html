@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="a few instructions about gollvm utilization">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Gollvm Compile Experience">
+<meta property="og:url" content="https://tianyuzhou.top/2020/01/03/gollvm/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="a few instructions about gollvm utilization">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-01-03T14:12:12.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.475Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="llvm">
+<meta property="article:tag" content="golang">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://tianyuzhou.top/2020/01/03/gollvm/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>Gollvm Compile Experience | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2020/01/03/gollvm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Gollvm Compile Experience
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-01-03 22:12:12" itemprop="dateCreated datePublished" datetime="2020-01-03T22:12:12+08:00">2020-01-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Language/" itemprop="url" rel="index"><span itemprop="name">Language</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Language/Golang/" itemprop="url" rel="index"><span itemprop="name">Golang</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">a few instructions about gollvm utilization</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Gollvm is an LLVM-based Go compiler. This article is about how to use Gollvm to generate normal go code and go project to LLVM IR.</p>
+<p>If you want more information of Gollvm, just refer to its official git <span class="exturl" data-url="aHR0cHM6Ly9nby5nb29nbGVzb3VyY2UuY29tL2dvbGx2bS8=" title="https://go.googlesource.com/gollvm/">repository<i class="fa fa-external-link"></i></span>.</p>
+<p><em>REMEMBER TO USE /bin/bash TO EXEC CMAKE</em></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> SHELL=/bin/bash cmake -G .....</span></span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h2 id="Clean-up"><a href="#Clean-up" class="headerlink" title="Clean up"></a>Clean up</h2><p>You have to clean up the temp build files before compile the go code.</p>
+<p><code>/tmp/</code> and <code>~/.cache/</code> is the main two directories that you should pay attention to. Ensure that in these directories there are no files begin with &#39;go-build&#39;.</p>
+<p>It not means that if these files exist, the go code will not able to be compiled, but it mean that you will get a normal executable file without the recording file which we need to generate LLVM IR.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls ~/.cache/ | grep go-build</span></span><br><span class="line">go-build</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Export-environment-variables"><a href="#Export-environment-variables" class="headerlink" title="Export environment variables"></a>Export environment variables</h2><p> Because we want to compile the go code use gollvm, we should change the default go compiler first.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> Root of Gollvm install is /tmp/gollvm-install</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> LD_LIBRARY_PATH=/tmp/gollvm-install/lib64</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> PATH=/tmp/gollvm-install/bin:<span class="variable">$PATH</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> go version</span></span><br><span class="line">go version go1.13 gollvm LLVM 10.0.0svn linux/amd64</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Compile-and-get-record"><a href="#Compile-and-get-record" class="headerlink" title="Compile and get record"></a>Compile and get record</h2><p>Then go the the position of the go code.</p>
+<p>In this example we go to the directory of <code>$GOPATH/src/myapp/</code>, and in this directory contains this <code>main.go</code> file.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// main.go</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"mytest"</span></span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    fmt.Printf(<span class="string">"Hello, world.  1+2 = %v\n"</span>, mytest.Sum(<span class="number">1</span>, <span class="number">2</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Package <code>mytest</code> is defined in another directory <code>$GOPATH/src/mytest/</code>, and there is also a go file in it.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// sum.go</span></span><br><span class="line"><span class="keyword">package</span> mytest</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Sum</span><span class="params">(x, y <span class="keyword">float64</span>)</span> <span class="title">float64</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> x + y</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Because <code>main.go</code> refers the function <code>Sum()</code> defined in package <code>mytest</code>, we have to use <code>go build</code> inside <code>mytest/</code> directory first.</p>
+<p>Then we can compile the code inside the <code>myapp</code> directory.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">pwd</span></span></span><br><span class="line">/home/zty/go/src/myapp</span><br><span class="line"><span class="meta">$</span><span class="bash"> go build -work -x 1&gt; transcript.txt 2&gt;&amp;1</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">main.go  myapp  transcript.txt</span><br><span class="line"><span class="meta">$</span><span class="bash"> ./myapp</span></span><br><span class="line">Hello, world.  1+2 = 3</span><br></pre></td></tr></table></figure>
+
+<p>Now we get an executable file <code>myapp</code> and a record of building instructions.</p>
+<h2 id="Change-instruction-and-get-LLVM-IR"><a href="#Change-instruction-and-get-LLVM-IR" class="headerlink" title="Change instruction and get LLVM IR"></a>Change instruction and get LLVM IR</h2><p>Then we look for some important sentences in this file.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> egrep <span class="string">'(WORK=|llvm-goc -c)'</span> transcript.txt</span></span><br><span class="line">WORK=/tmp/go-build892006435</span><br><span class="line">/home/zty/workarea/llvmgo/bin/llvm-goc -c -O2 -g -m64 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -fgo-pkgpath=mytest -o $WORK/b003/_go_.o -I $WORK/b003/_importcfgroot_ ./sum.go</span><br><span class="line">/home/zty/workarea/llvmgo/bin/llvm-goc -c -O2 -g -m64 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -o $WORK/b001/_go_.o -I $WORK/b001/_importcfgroot_ ./main.go</span><br></pre></td></tr></table></figure>
+
+<p>We find <code>WORK</code> which is the working directory of compilation and two building instructions using <code>llvm-goc</code>. Then we have to modify the building instructions to get LLVM IR in order for further research.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> <span class="variable">$GOPATH</span>/src/mytest/</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> WORK=/tmp/go-build892006435</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> /home/zty/workarea/llvmgo/bin/llvm-goc -c -O2 -g -m64 -fdebug-prefix-map=<span class="variable">$WORK</span>=/tmp/go-build -gno-record-gcc-switches -fgo-pkgpath=mytest -o sum.ll -S -emit-llvm -I <span class="variable">$WORK</span>/b003/_importcfgroot_ ./sum.go</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">sum.go  sum.ll</span><br></pre></td></tr></table></figure>
+
+<p>Notice that we have changed <code>-o $WORK/b003/_go_.o</code> to <code>-o sum.ll -S -emit-llvm</code>. The <code>sum.ll</code> is the LLVM IR generated from <code>sum.go</code>.</p>
+<p>And for <code>main.go</code> we just do the same thing.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> <span class="variable">$GOPATH</span>/src/myapp/</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> /home/zty/workarea/llvmgo/bin/llvm-goc -c -O2 -g -m64 -fdebug-prefix-map=<span class="variable">$WORK</span>=/tmp/go-build -gno-record-gcc-switches -o main.ll -S -emit-llvm -I <span class="variable">$WORK</span>/b001/_importcfgroot_ ./main.go</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">main.go  main.ll  myapp  transcript.txt</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Convert-multiple-IR-to-one-IR"><a href="#Convert-multiple-IR-to-one-IR" class="headerlink" title="Convert multiple IR to one IR"></a>Convert multiple IR to one IR</h2><p>We can use <a href="http://llvm.org/docs/CommandGuide/llvm-link.html" target="_blank" rel="noopener"><code>llvm-link</code></a> tool to take several LLVM bitcode files and links them together into a single LLVM bitcode file. Of course, the input can be readable .ll files too.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> <span class="variable">$GOPATH</span>/src/myapp/</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">main.go  main.ll  myapp  transcript.txt</span><br><span class="line"><span class="meta">$</span><span class="bash"> llvm-link main.ll <span class="variable">$GOPATH</span>/src/mytest/sum.ll -o out.bc</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">main.go  main.ll  myapp  out.bc  transcript.txt</span><br></pre></td></tr></table></figure>
+
+<p>Then we use <code>llvm-dis</code> to translate the binary unreadable bitcode file.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> llvm-dis out.bc </span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">main.go  main.ll  myapp  out.bc  out.ll  transcript.txt</span><br></pre></td></tr></table></figure>
+
+<p>We can read this <code>out.ll</code> file and find both <code>main.main()</code> and <code>mytest.Sum()</code> functions.</p>
+<p>Besides, we can run LLVM Pass on this LLVM IR which contains all functions in the project.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/llvm/" rel="tag"># llvm</a>
+              <a href="/tags/golang/" rel="tag"># golang</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/11/23/bazel-build-cgo/" rel="prev" title="bazel build cgo">
+      <i class="fa fa-chevron-left"></i> bazel build cgo
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/12/gVisor-to-LLVM-IR/" rel="next" title="Gollvm Compile gVisor To LLVM IR">
+      Gollvm Compile gVisor To LLVM IR <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Clean-up"><span class="nav-number">1.</span> <span class="nav-text">Clean up</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Export-environment-variables"><span class="nav-number">2.</span> <span class="nav-text">Export environment variables</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Compile-and-get-record"><span class="nav-number">3.</span> <span class="nav-text">Compile and get record</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Change-instruction-and-get-LLVM-IR"><span class="nav-number">4.</span> <span class="nav-text">Change instruction and get LLVM IR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Convert-multiple-IR-to-one-IR"><span class="nav-number">5.</span> <span class="nav-text">Convert multiple IR to one IR</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="a brief introduction to gvisor">
+<meta property="og:type" content="article">
+<meta property="og:title" content="gvisor getting started">
+<meta property="og:url" content="https://tianyuzhou.top/2019/09/20/gvisor-indoor/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="a brief introduction to gvisor">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://tianyuzhou.top/images/gvisorIndoor/Sentry-Gofer.png">
+<meta property="article:published_time" content="2019-09-20T14:12:12.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.475Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="gvisor">
+<meta property="article:tag" content="system call">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://tianyuzhou.top/images/gvisorIndoor/Sentry-Gofer.png">
+
+<link rel="canonical" href="https://tianyuzhou.top/2019/09/20/gvisor-indoor/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>gvisor getting started | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2019/09/20/gvisor-indoor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          gvisor getting started
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-09-20 22:12:12" itemprop="dateCreated datePublished" datetime="2019-09-20T22:12:12+08:00">2019-09-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Container/" itemprop="url" rel="index"><span itemprop="name">Container</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">a brief introduction to gvisor</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>A thorough introduction to gVisor, including compile and further development.</p>
+<a id="more"></a>
+
+<h2 id="gVisor-Setup"><a href="#gVisor-Setup" class="headerlink" title="gVisor Setup"></a>gVisor Setup</h2><h3 id="docker-安装"><a href="#docker-安装" class="headerlink" title="docker 安装"></a>docker 安装</h3><p>Docker的安装主要参照Docker官网的教程</p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vaW5zdGFsbC9saW51eC9kb2NrZXItY2UvdWJ1bnR1Lw==" title="https://docs.docker.com/install/linux/docker-ce/ubuntu/">Ubuntu<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vaW5zdGFsbC9saW51eC9kb2NrZXItY2UvY2VudG9zLw==" title="https://docs.docker.com/install/linux/docker-ce/centos/">CentOS<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZG9ja2VyLWZvci1tYWMvaW5zdGFsbC8=" title="https://docs.docker.com/docker-for-mac/install/">MacOS<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmRvY2tlci5jb20vZG9ja2VyLWZvci13aW5kb3dzLw==" title="https://docs.docker.com/docker-for-windows/">Windows<i class="fa fa-external-link"></i></span></li>
+</ul>
+<p><strong>注意：可能在安装的过程当中需要翻墙</strong></p>
+<p>在安装完成之后，运行</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo docker run hello-world</span></span><br></pre></td></tr></table></figure>
+
+<p>即可看到hello-world image在docker当中run的结果。</p>
+<h4 id="安装须知"><a href="#安装须知" class="headerlink" title="安装须知"></a>安装须知</h4><h5 id="用户权限"><a href="#用户权限" class="headerlink" title="用户权限"></a>用户权限</h5><p>通过运行以下语句，可以将当前的用户添加进可以运行<strong>docker</strong>的用户当中。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo groupadd docker</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo gpasswd -a <span class="variable">$&#123;USER&#125;</span> docker</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo systemctl restart docker</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> reboot</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="国内镜像设置"><a href="#国内镜像设置" class="headerlink" title="国内镜像设置"></a>国内镜像设置</h5><p>参照<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3h4YjI0OS9hcnRpY2xlL2RldGFpbHMvNzk0Njk1MzQ=" title="https://blog.csdn.net/xxb249/article/details/79469534">docker构建国内镜像服务<i class="fa fa-external-link"></i></span></p>
+<p>笔者采用的是阿里云。如果翻墙速度较快的话，用<strong>docker</strong>官方的仓库也行。</p>
+<h4 id="学习资料"><a href="#学习资料" class="headerlink" title="学习资料"></a>学习资料</h4><ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly95ZWFzeS5naXRib29rcy5pby9kb2NrZXJfcHJhY3RpY2Uv" title="https://yeasy.gitbooks.io/docker_practice/">Docker——从入门到实践<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cudzNjc2Nob29sLmNuL2RvY2tlci8=" title="https://www.w3cschool.cn/docker/">Docker教程<i class="fa fa-external-link"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cua2F0YWNvZGEuY29tL2NvdXJzZXMvZG9ja2Vy" title="https://www.katacoda.com/courses/docker">Learn Docker &amp; Containers using Interactive Browser-Based Scenarios<i class="fa fa-external-link"></i></span></li>
+</ul>
+<h3 id="gVisor-安装"><a href="#gVisor-安装" class="headerlink" title="gVisor 安装"></a>gVisor 安装</h3><p>本文采用的是<strong>gVisor</strong>在<a href="https://github.com/google/gvisor" target="_blank" rel="noopener"><strong>Github</strong>的安装教程</a>来安装的。如果<strong>不采用编译源码的方式</strong>，可以按照<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvdXNlcl9ndWlkZS9kb2NrZXIv" title="https://gvisor.dev/docs/user_guide/docker/">官方Doc的方法<i class="fa fa-external-link"></i></span>下载安装。</p>
+<p>主要的安装步骤如下</p>
+<h4 id="Download-gVisor"><a href="#Download-gVisor" class="headerlink" title="Download gVisor"></a>Download gVisor</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git <span class="built_in">clone</span> https://gvisor.googlesource.com/gvisor gvisor</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> gvisor</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Install-bazel"><a href="#Install-bazel" class="headerlink" title="Install bazel"></a>Install bazel</h4><p>具体参照<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmJhemVsLmJ1aWxkL3ZlcnNpb25zL21hc3Rlci9pbnN0YWxsLXVidW50dS5odG1s" title="https://docs.bazel.build/versions/master/install-ubuntu.html">Bazel官方文档<i class="fa fa-external-link"></i></span></p>
+<h4 id="Build-gVisor"><a href="#Build-gVisor" class="headerlink" title="Build gVisor"></a>Build gVisor</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bazel build runsc</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo cp ./bazel-bin/runsc/linux_amd64_pure_stripped/runsc /usr/<span class="built_in">local</span>/bin</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="bazel-build-error"><a href="#bazel-build-error" class="headerlink" title="bazel build error"></a>bazel build error</h4><p>会出现因为网络原因无法 build 的包，这个时候可以搜索 github 关于这些包的镜像<br>我碰到的有 <code>org_golang_x_time</code> 和 <code>org_golang_x_tools</code><br>在 <code>gvisor/WORKSPACE</code> 文件中找到他们对应的 <code>go_repository</code> 替换 <code>importpath</code> 即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">go_repository(</span><br><span class="line">    name &#x3D; &quot;org_golang_x_time&quot;,</span><br><span class="line">    commit &#x3D; &quot;c4c64cad1fd0a1a8dab2523e04e61d35308e131e&quot;,</span><br><span class="line">    importpath &#x3D; &quot;github.com&#x2F;golang&#x2F;time&quot;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>我替换的为</p>
+<ul>
+<li><code>golang.org/x/time</code> -&gt; <code>github.com/golang/time</code></li>
+</ul>
+<p>还需要更改 3 个文件， 可以使用 <code>grep -r &quot;golang.org/x/time&quot; .</code>，然后根据现实的文件修改内部的相关 <code>import</code> 内容</p>
+<p>其他的通过翻墙就可以解决。</p>
+<h4 id="关于Docker的设置"><a href="#关于Docker的设置" class="headerlink" title="关于Docker的设置"></a>关于Docker的设置</h4><p>参照<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvdXNlcl9ndWlkZS9kb2NrZXIvI2NvbmZpZ3VyaW5nLWRvY2tlcg==" title="https://gvisor.dev/docs/user_guide/docker/#configuring-docker">Configuring Docker<i class="fa fa-external-link"></i></span></p>
+<p>将runsc的目录添加到Docker的配置文件当中</p>
+<h4 id="学习资料-1"><a href="#学习资料-1" class="headerlink" title="学习资料"></a>学习资料</h4><p>目前国内关于gVisor的学习资料相对匮乏，所以主要的请参照<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3Mv" title="https://gvisor.dev/docs/">gVisor官网文档<i class="fa fa-external-link"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9ndmlzb3I=" title="https://github.com/google/gvisor">gVisor源码<i class="fa fa-external-link"></i></span>。</p>
+<h4 id="gVisor设置platform为kvm"><a href="#gVisor设置platform为kvm" class="headerlink" title="gVisor设置platform为kvm"></a>gVisor设置platform为kvm</h4><p>安装依赖(Ubuntu)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get install qemu-kvm</span></span><br></pre></td></tr></table></figure>
+<p>修改/etc/docker/daemon.json文件，增加参数</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"runtimes"</span>: &#123;</span><br><span class="line">        <span class="attr">"runsc-kvm"</span>: &#123;</span><br><span class="line">            <span class="attr">"path"</span>: <span class="string">"/usr/local/bin/runsc"</span>,</span><br><span class="line">            <span class="attr">"runtimeArgs"</span>: [</span><br><span class="line">                <span class="string">"--platform=kvm"</span></span><br><span class="line">            ]</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重启docker</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo systemctl restart docker</span></span><br></pre></td></tr></table></figure>
+
+<p>使用gvisor在docker中运行hello-world</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> docker run runtime=runsc-kvm hello-world</span></span><br></pre></td></tr></table></figure>
+
+<p>正常打出hello world等一系列信息则说明设置gVisor成功。</p>
+<h4 id="设置Debug参数"><a href="#设置Debug参数" class="headerlink" title="设置Debug参数"></a>设置Debug参数</h4><p>若要启用调试和系统调用的日志记录，将下面的runtimeArgs添加到Docker配置(<code>/etc/docker/daemon.json</code>)</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"runtimes"</span>: &#123;</span><br><span class="line">        <span class="attr">"runsc-kvm"</span>: &#123;</span><br><span class="line">            <span class="attr">"path"</span>: <span class="string">"/usr/local/bin/runsc"</span>,</span><br><span class="line">            <span class="attr">"runtimeArgs"</span>: [</span><br><span class="line">                <span class="string">"--platform=kvm"</span>,</span><br><span class="line">                <span class="string">"--debug-log=/tmp/runsc/"</span>,</span><br><span class="line">                <span class="string">"--debug"</span>,</span><br><span class="line">                <span class="string">"--strace"</span></span><br><span class="line">            ]</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>更多的信息请见官方关于<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvdXNlcl9ndWlkZS9kZWJ1Z2dpbmcv" title="https://gvisor.dev/docs/user_guide/debugging/">gVisor Debugging的文档<i class="fa fa-external-link"></i></span>。</p>
+<h2 id="gVisor-Overview"><a href="#gVisor-Overview" class="headerlink" title="gVisor Overview"></a>gVisor Overview</h2><blockquote>
+<p>gVisor是一个用Go编写的user-space kernel，它实现了很大一部分的Linux系统调用接口。 它在运行的应用程序和主机操作系统之间提供了额外的隔离层。</p>
+</blockquote>
+<blockquote>
+<p>gVisor包含一个名为 <code>runsc</code> 的Open Container Initiative（OCI）runtime，可以轻松使用现有的容器工具。<code>runsc</code> runtime与Docker和Kubernetes集成，使得运行沙盒化(sandboxed)容器变得简单。</p>
+</blockquote>
+<blockquote>
+<p>与现有的sandbox技术相比，gVisor采用了独特的容器沙盒化(sandboxing)方法，并进行了一系列不同的技术权衡，从而为<strong>容器安全</strong>领域提供了新的工具和思路。</p>
+</blockquote>
+<p>更多介绍参考<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3Mv" title="https://gvisor.dev/docs/">官方Doc<i class="fa fa-external-link"></i></span>。还有相关的架构(Architecture)介绍<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvYXJjaGl0ZWN0dXJlX2d1aWRlLw==" title="https://gvisor.dev/docs/architecture_guide/">参考此处<i class="fa fa-external-link"></i></span>。</p>
+<h3 id="Sandbox"><a href="#Sandbox" class="headerlink" title="Sandbox"></a>Sandbox</h3><p>gVisor 当中有许多重要的概念，本文不能一一尽述，就介绍几个相关的最为重要的部分。</p>
+<p><span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvYXJjaGl0ZWN0dXJlX2d1aWRlL292ZXJ2aWV3Lw==" title="https://gvisor.dev/docs/architecture_guide/overview/">gVisor sandbox<i class="fa fa-external-link"></i></span> 在运行的时候包含了<strong>许多进程</strong>，这些进程共同组成一个共享环境，在其中可以运行<strong>一个或多个</strong>容器。</p>
+<p>每个 sandbox 都有其独立的实例(instance)</p>
+<ul>
+<li><strong>Sentry</strong>，运行容器的 <strong>user space kernel</strong>，负责直接和 APP 交互，它<strong>拦截并响应</strong>来自于 APP 的系统调用</li>
+<li><strong>Gofer</strong>，为容器提供文件系统的访问</li>
+</ul>
+<p>具体的结构如下图所示</p>
+<p><img src="/images/gvisorIndoor/Sentry-Gofer.png" alt=""></p>
+<p>本文之后的内容会重点放在 APP 与 Sentry 之间的 system calls 以及 gVisor sandbox 和 Host Kernel 之间的 system calls 上。</p>
+<h3 id="Sentry"><a href="#Sentry" class="headerlink" title="Sentry"></a>Sentry</h3><p><span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvYXJjaGl0ZWN0dXJlX2d1aWRlL292ZXJ2aWV3Lw==" title="https://gvisor.dev/docs/architecture_guide/overview/">Sentry<i class="fa fa-external-link"></i></span> 是 gVisor 的最大的组件。 它可以被认为是一个 user-space OS kernel。 Sentry 实现了不受信任的应用程序(APP)所需的<strong>所有内核功能</strong>。 它实现了<strong>所有</strong>受支持的<u>系统调用</u>，<u>信号传递</u>，<u>内存管理</u>和<u>页面错误逻辑</u>，<u>线程模型</u>等。</p>
+<p>当不受信任的应用程序(APP)进行<strong>系统调用</strong>时，当前使用的<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvYXJjaGl0ZWN0dXJlX2d1aWRlL292ZXJ2aWV3LyNwbGF0Zm9ybXM=" title="https://gvisor.dev/docs/architecture_guide/overview/#platforms">平台(Platform)<i class="fa fa-external-link"></i></span>会将<strong>调用重定向</strong>到 Sentry，后者将执行必要的工作来为其提供服务。 值得注意的是，Sentry <strong>不会简单地将系统调用传递给主机内核</strong>。 作为用户空间应用程序，Sentry将进行一些主机系统调用以支持其操作，但它不允许应用程序直接控制它所进行的系统调用。事实上，在 kvm platform 下，sentry 不会把未实现的 system call 传递给主机内核，而是<span class="exturl" data-url="aHR0cHM6Ly9ncm91cHMuZ29vZ2xlLmNvbS9kL21zZy9ndmlzb3ItdXNlcnMvQjhta2d3aUpGT1kvalU1QlItT3NCQUFK" title="https://groups.google.com/d/msg/gvisor-users/B8mkgwiJFOY/jU5BR-OsBAAJ">简单的报错<i class="fa fa-external-link"></i></span>。</p>
+<p>超出sandbox（不是内部/proc文件，管道等）的文件系统操作将发送到<span class="exturl" data-url="aHR0cHM6Ly9ndmlzb3IuZGV2L2RvY3MvYXJjaGl0ZWN0dXJlX2d1aWRlL292ZXJ2aWV3LyNnb2Zlcg==" title="https://gvisor.dev/docs/architecture_guide/overview/#gofer">Gofer<i class="fa fa-external-link"></i></span>。</p>
+<h2 id="gVisor-system-calls"><a href="#gVisor-system-calls" class="headerlink" title="gVisor system calls"></a>gVisor system calls</h2><p>gVisor 的系统调用分成两个部分来讲述，第一部分 System Call Implementation 介绍了 Linux 如何实现系统调用，以及 gVisor 是如何仿照 Linux 来做的。第二部分则利用 gVisor 设计实现系统调用的原理，自己设计并添加了一个新的系统调用，借此来熟悉 gVisor 具体的系统调用流程。</p>
+<h3 id="System-Call-Implementation"><a href="#System-Call-Implementation" class="headerlink" title="System Call Implementation"></a>System Call Implementation</h3><h4 id="Linux-Implementation"><a href="#Linux-Implementation" class="headerlink" title="Linux Implementation"></a>Linux Implementation</h4><p>首先需要搞清楚的一点是，Linux 是怎么实现系统调用的。<span class="exturl" data-url="aHR0cHM6Ly9sd24ubmV0L0FydGljbGVzLzYwNDI4Ny8=" title="https://lwn.net/Articles/604287/">Anatomy of a system call, part 1<i class="fa fa-external-link"></i></span> 介绍了Linux实现系统调用的具体流程。</p>
+<p>系统调用和普通的函数不同，被调用的代码放在内核里面。当 APP 进行系统调用的时候，需要有<strong>特定的指令</strong>，使得处理器进行<strong>ring 0</strong>(特权模式)的转换。同时系统调用不是由地址来标识，而是<strong>由系统调用号来标识</strong>的。</p>
+<p>上文提到的那篇文章，以 <code>read()</code> 系统调用为例详细介绍了 Linux kernel 的的系统调用流程。这里有个重点需要指出，<code>system_call</code> 系统调用处理函数的地址写入寄存器 <strong>MSR_LSTAR (0xc0000082)</strong>，这是用于处理SYSCALL指令的x86_64特定于模型的寄存器，不同的硬件设备是不一样的。</p>
+<p>系统调用的简要流程如下</p>
+<p>user-space 的用户进程将系统调用号放入寄存器 <code>RAX</code>，然后其他参数放到具体的寄存器，之后运行 <code>SYSCALL</code> 指令。硬件完成切换 Ring 0，调用 MSR_LSTAR 寄存器指向地址的代码 <code>system_call</code>，寄存器值(之前的参数值)放入kernel Stack，根据 <code>RAX</code> 获取函数指针，然后最后调用具体的系统调用实现函数。这写过程都是由硬件完成的，而 <code>system_call</code> 的地址是在系统调用初始化的时候就放入寄存器当中的。</p>
+<h4 id="gVisor-Implementation"><a href="#gVisor-Implementation" class="headerlink" title="gVisor Implementation"></a>gVisor Implementation</h4><p>根据 <span class="exturl" data-url="aHR0cHM6Ly9ncm91cHMuZ29vZ2xlLmNvbS9kL21zZy9ndmlzb3ItdXNlcnMvMTVGZmNDaWx1cG8vN2loMzV1UEhCQUFK" title="https://groups.google.com/d/msg/gvisor-users/15FfcCilupo/7ih35uPHBAAJ">gVisor 论坛当中的帖子<i class="fa fa-external-link"></i></span>，在 KVM 平台下，系统调用的拦截和普通的OS类似。当在 guest mode 运行程序的时候，KVM 把上文提到的 <code>MSR_LSTAR</code> 寄存器设置为一个 <a href="https://github.com/google/gvisor/blob/master/pkg/sentry/platform/ring0/entry_amd64.go#L23-L32" target="_blank" rel="noopener"><strong>system call handler</strong></a>，每次程序发生系统调用或者是 sentry 自己进行系统调用的时候，这个 <code>sysenter()</code> 函数都会执行。详细的在下一节当中有介绍。</p>
+<h3 id="Add-a-System-Call-To-gVisor"><a href="#Add-a-System-Call-To-gVisor" class="headerlink" title="Add a System Call To gVisor"></a>Add a System Call To gVisor</h3><p>以下实验请在 <code>release-20190806.1</code> 版本上实践，不同的 gVisor 版本对于 syscall 的实现方式会有偏差。</p>
+<h4 id="添加-syscall-的主要步骤"><a href="#添加-syscall-的主要步骤" class="headerlink" title="添加 syscall 的主要步骤"></a>添加 syscall 的主要步骤</h4><p>参考<span class="exturl" data-url="aHR0cHM6Ly9ncm91cHMuZ29vZ2xlLmNvbS9kL21zZy9ndmlzb3ItdXNlcnMvLV9JZ3RwUEhpaWMvTG9xbU10QXVCUUFK" title="https://groups.google.com/d/msg/gvisor-users/-_IgtpPHiic/LoqmMtAuBQAJ">我在gvisor论坛上面的Topic<i class="fa fa-external-link"></i></span>，在gVisor中添加一个系统调用主要分三步</p>
+<ul>
+<li>在<a href="https://github.com/google/gvisor/blob/fb996668e40031671e08d107e1a5307e813215f9/pkg/sentry/syscalls/linux/linux64.go#L48" target="_blank" rel="noopener"><code>pkg/sentry/syscalls/linux/linux64.go</code></a>文件当中的<code>var AMD64</code>变量当中添加调用函数名和系统调用号</li>
+<li>在<code>pkg/sentry/syscalls/linux</code>目录下添加<code>×××.go</code>文件，在这个文件里定义调用函数</li>
+<li>在<a href="https://github.com/google/gvisor/blob/fb996668e40031671e08d107e1a5307e813215f9/pkg/sentry/syscalls/linux/BUILD#L7" target="_blank" rel="noopener"><code>pkg/sentry/syscalls/linux/BUILD</code></a>文件当中添加构建项</li>
+</ul>
+<p>以上三步完成之后，重新编译gvisor就可以在Application当中进行系统调用(按照系统调用号)，调用我们刚刚定义的函数。</p>
+<h4 id="gVisor-关于-redirect-syscall-的原理"><a href="#gVisor-关于-redirect-syscall-的原理" class="headerlink" title="gVisor 关于 redirect syscall 的原理"></a>gVisor 关于 redirect syscall 的原理</h4><p><span class="exturl" data-url="aHR0cHM6Ly9sd24ubmV0L0FydGljbGVzLzYwNDI4Ny8=" title="https://lwn.net/Articles/604287/">Anatomy of a system call, part 1<i class="fa fa-external-link"></i></span> 介绍了Linux实现系统调用的具体流程。</p>
+<p>和Linux实现系统调用类似，gVisor 也存在着这样的机制。</p>
+<p>gVisor 在 sentry 当中实现系统调用，具体的架构如下(来自于<span class="exturl" data-url="aHR0cHM6Ly93ZW5ib3NoZW4ub3JnL3Bvc3RzLzIwMTgtMTItMDEtc2VjdGFpbmVyLmh0bWw=" title="https://wenboshen.org/posts/2018-12-01-sectainer.html">申文博老师的runc, gvisor, and kata container<i class="fa fa-external-link"></i></span>)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">          Application     --&gt; Guest Ring 3</span><br><span class="line">         ----------------</span><br><span class="line">          Sentry (ring0)  --&gt; Guest Ring 0</span><br><span class="line">GUEST</span><br><span class="line">-------------------------------------------</span><br><span class="line">HOST</span><br><span class="line">          Sentry (kvm)    --&gt; Host Ring 3</span><br><span class="line">         -------------</span><br><span class="line">          Host kernel     --&gt; Host Ring 0</span><br></pre></td></tr></table></figure>
+
+<p><strong>Sentry</strong> 在初始化的时候，将系统调用函数 <a href="https://github.com/google/gvisor/blob/fb996668e40031671e08d107e1a5307e813215f9/pkg/sentry/platform/ring0/kernel_amd64.go#L243" target="_blank" rel="noopener"><code>sysenter()</code></a> 放入 <strong>MSR_LSTAR</strong> 寄存器当中，当 <strong>Application</strong> 发生系统调用的时候，机器会直接陷入 trap，然后自动调用存放在 <strong>MSR_LSTAR</strong> 寄存器当中的函数，即 <code>sysenter()</code>。</p>
+<p>每次 <strong>Application</strong> 发生系统调用或者是 <strong>sentry</strong> 自己进行系统调用的时候，这个 <code>sysenter()</code> 函数都会执行。这个函数是用汇编代码来写的，主要做的事情就是在 <strong>context switch</strong> 的过程当中保存寄存器的值，然后根据 <strong>kernel space</strong> 里面的 <strong>syscall table</strong> 来进行跳转到具体的系统调用实现函数中去。</p>
+<p><strong>sentry</strong> 当中的 <strong>kernel space</strong> 其实在 <strong>Host</strong> 看来是 <strong>user space</strong> 当中分配给 <strong>sentry</strong> 的其中一部分。</p>
+<p>当添加一个系统调用的时候，需要做的就是编写调用函数，同时将系统调用函数名和调用号都添加到 <strong>syscall table</strong> 当中去。</p>
+<h4 id="添加调用函数名和调用号"><a href="#添加调用函数名和调用号" class="headerlink" title="添加调用函数名和调用号"></a>添加调用函数名和调用号</h4><p>在<a href="https://github.com/google/gvisor/blob/fb996668e40031671e08d107e1a5307e813215f9/pkg/sentry/syscalls/linux/linux64.go#L48" target="_blank" rel="noopener"><code>pkg/sentry/syscalls/linux/linux64.go</code></a>文件当中的<code>var AMD64</code>变量当中添加调用函数名和系统调用号。</p>
+<p>上文讲到的 <strong>syscall table</strong> 定义在 <code>var AMD64</code> 变量当中的 <code>Table</code> 属性下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> AMD64 = &amp;kernel.SyscallTable&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    Table: <span class="keyword">map</span>[<span class="keyword">uintptr</span>]kernel.SyscallFn&#123;</span><br><span class="line">        <span class="number">0</span>:  Read,</span><br><span class="line">        <span class="number">1</span>:  Write,</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="number">400</span>: Square,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>添加新的系统调用的时候，形式应该和上述的调用一样，以<code>调用号: 调用函数名</code>的形式，如上述代码中的<code>400: Square</code>。</p>
+<p>这一步相当于在调用表当中注册了新的调用函数。接下来就是定义这个新添加的调用函数。</p>
+<h4 id="定义调用函数"><a href="#定义调用函数" class="headerlink" title="定义调用函数"></a>定义调用函数</h4><p>定义调用函数的目录是确定的，在 <code>pkg/sentry/syscalls/linux</code>。</p>
+<p>在该目录新建一个<code>.go</code>文件，这里以之前添加的 <code>Square</code> 调用函数为例，在目录下新建一个名为<code>sys_square.go</code>的文件</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> linux</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"gvisor.googlesource.com/gvisor/pkg/sentry/arch"</span></span><br><span class="line">    <span class="string">"gvisor.googlesource.com/gvisor/pkg/sentry/kernel"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Square returns the square of arg[0]</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Square</span><span class="params">(t *kernel.Task, args arch.SyscallArguments)</span> <span class="params">(<span class="keyword">uintptr</span>, *kernel.SyscallControl, error)</span></span> &#123;</span><br><span class="line">    num := args[<span class="number">0</span>].Int()</span><br><span class="line">    num = num * num</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">uintptr</span>(num), <span class="literal">nil</span>, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的<code>Square()</code>函数接受一个参数并返回它的平方。</p>
+<p>注意这里的 <strong>package</strong> 和 <strong>import</strong> 部分必须一致。函数名要和之前注册的相对应。</p>
+<h4 id="添加构建项"><a href="#添加构建项" class="headerlink" title="添加构建项"></a>添加构建项</h4><p>打开<a href="https://github.com/google/gvisor/blob/fb996668e40031671e08d107e1a5307e813215f9/pkg/sentry/syscalls/linux/BUILD#L7" target="_blank" rel="noopener"><code>pkg/sentry/syscalls/linux/BUILD</code></a>文件，添加新建的<code>sys_square.go</code>文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">package(licenses &#x3D; [&quot;notice&quot;])</span><br><span class="line">load(&quot;&#x2F;&#x2F;tools&#x2F;go_stateify:defs.bzl&quot;, &quot;go_library&quot;)</span><br><span class="line">go_library(</span><br><span class="line">    name &#x3D; &quot;linux&quot;,</span><br><span class="line">    srcs &#x3D; [</span><br><span class="line">        &quot;error.go&quot;,</span><br><span class="line">        &quot;flags.go&quot;,</span><br><span class="line">        &quot;linux64.go&quot;,</span><br><span class="line">        &quot;timespec.go&quot;,</span><br><span class="line">        ...</span><br><span class="line">        &quot;sys_square.go&quot;     &lt;-------------- new</span><br><span class="line">    ],</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>重新 <strong>build</strong> gVisor。</p>
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><p>参考<span class="exturl" data-url="aHR0cHM6Ly93d3cuZmVuZ2JvaGVsbG8udG9wL2FyY2hpdmVzL2dvLWVudi1kb2NrZXI=" title="https://www.fengbohello.top/archives/go-env-docker">这篇文章<i class="fa fa-external-link"></i></span>，使用 <strong>docker</strong> 来构建 <strong>go</strong> 语言环境，生成可执行文件。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// test-square.go</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">    <span class="string">"os"</span></span><br><span class="line">    <span class="string">"syscall"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> SQUARE = <span class="number">400</span> </span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    r1, _, errNo := syscall.RawSyscall(SQUARE, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">if</span> errNo != <span class="number">0</span> &#123; </span><br><span class="line">        fmt.Fprintf(os.Stderr, <span class="string">"ERROR: %d\n"</span>, errNo)</span><br><span class="line">        os.Exit(<span class="number">1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    fmt.Printf(<span class="string">"%d\n"</span>, r1) </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个文件通过<code>syscall.RawSyscall(SQUARE, 5, 0, 0)</code>利用系统调用号来进行系统调用，这里用到的参数仅仅为第一个<code>5</code>。</p>
+<p>将该程序编译之后得到可执行文件<code>test-square</code>，在 <strong>gVisor</strong> 当中运行它，得到如下输出</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@91071194a4c4:/code# ls</span><br><span class="line">test-square  test-square.go</span><br><span class="line">root@91071194a4c4:/code# ./test-square </span><br><span class="line">25</span><br></pre></td></tr></table></figure>
+
+<p>输出为<code>5</code>的平方<code>25</code>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/gvisor/" rel="tag"># gvisor</a>
+              <a href="/tags/system-call/" rel="tag"># system call</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/06/27/Stack-Overflow/" rel="prev" title="Stack Overflow In Ubuntu 18.04">
+      <i class="fa fa-chevron-left"></i> Stack Overflow In Ubuntu 18.04
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/06/ftp/" rel="next" title="ftp">
+      ftp <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#gVisor-Setup"><span class="nav-number">1.</span> <span class="nav-text">gVisor Setup</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#docker-安装"><span class="nav-number">1.1.</span> <span class="nav-text">docker 安装</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#安装须知"><span class="nav-number">1.1.1.</span> <span class="nav-text">安装须知</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#用户权限"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">用户权限</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#国内镜像设置"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">国内镜像设置</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#学习资料"><span class="nav-number">1.1.2.</span> <span class="nav-text">学习资料</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gVisor-安装"><span class="nav-number">1.2.</span> <span class="nav-text">gVisor 安装</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Download-gVisor"><span class="nav-number">1.2.1.</span> <span class="nav-text">Download gVisor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Install-bazel"><span class="nav-number">1.2.2.</span> <span class="nav-text">Install bazel</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Build-gVisor"><span class="nav-number">1.2.3.</span> <span class="nav-text">Build gVisor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#bazel-build-error"><span class="nav-number">1.2.4.</span> <span class="nav-text">bazel build error</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于Docker的设置"><span class="nav-number">1.2.5.</span> <span class="nav-text">关于Docker的设置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#学习资料-1"><span class="nav-number">1.2.6.</span> <span class="nav-text">学习资料</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gVisor设置platform为kvm"><span class="nav-number">1.2.7.</span> <span class="nav-text">gVisor设置platform为kvm</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#设置Debug参数"><span class="nav-number">1.2.8.</span> <span class="nav-text">设置Debug参数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gVisor-Overview"><span class="nav-number">2.</span> <span class="nav-text">gVisor Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sandbox"><span class="nav-number">2.1.</span> <span class="nav-text">Sandbox</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Sentry"><span class="nav-number">2.2.</span> <span class="nav-text">Sentry</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gVisor-system-calls"><span class="nav-number">3.</span> <span class="nav-text">gVisor system calls</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#System-Call-Implementation"><span class="nav-number">3.1.</span> <span class="nav-text">System Call Implementation</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Linux-Implementation"><span class="nav-number">3.1.1.</span> <span class="nav-text">Linux Implementation</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gVisor-Implementation"><span class="nav-number">3.1.2.</span> <span class="nav-text">gVisor Implementation</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Add-a-System-Call-To-gVisor"><span class="nav-number">3.2.</span> <span class="nav-text">Add a System Call To gVisor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加-syscall-的主要步骤"><span class="nav-number">3.2.1.</span> <span class="nav-text">添加 syscall 的主要步骤</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gVisor-关于-redirect-syscall-的原理"><span class="nav-number">3.2.2.</span> <span class="nav-text">gVisor 关于 redirect syscall 的原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#添加调用函数名和调用号"><span class="nav-number">3.2.3.</span> <span class="nav-text">添加调用函数名和调用号</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#定义调用函数"><span class="nav-number">3.2.4.</span> <span class="nav-text">定义调用函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#添加构建项"><span class="nav-number">3.2.5.</span> <span class="nav-text">添加构建项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试"><span class="nav-number">3.2.6.</span> <span class="nav-text">测试</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

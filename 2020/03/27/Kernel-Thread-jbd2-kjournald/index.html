@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="a thorough analyse of the Linux kernel thread - kjournald">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kernel Thread jbd2 kjournald">
+<meta property="og:url" content="https://tianyuzhou.top/2020/03/27/Kernel-Thread-jbd2-kjournald/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="a thorough analyse of the Linux kernel thread - kjournald">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthreadd.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthreadd-task.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread_create.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread_run.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread_create_on_node.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread_on_node.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread_create_list.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthreadd().png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/create_kthread.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kernel_thread.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthread.png">
+<meta property="og:image" content="https://tianyuzhou.top/images/kthread-jbd2/create_kjournald.png">
+<meta property="article:published_time" content="2020-03-27T10:24:52.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.472Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="kernel thread">
+<meta property="article:tag" content="linux kernel">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://tianyuzhou.top/images/kthread-jbd2/kthreadd.png">
+
+<link rel="canonical" href="https://tianyuzhou.top/2020/03/27/Kernel-Thread-jbd2-kjournald/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>Kernel Thread jbd2 kjournald | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2020/03/27/Kernel-Thread-jbd2-kjournald/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kernel Thread jbd2 kjournald
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-03-27 18:24:52" itemprop="dateCreated datePublished" datetime="2020-03-27T18:24:52+08:00">2020-03-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">a thorough analyse of the Linux kernel thread - kjournald</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文详细介绍了 Linux kernel 当中的 kernel thread 的创建、唤醒和工作流程，当然因为 kernel thread 的种类很多，所以文中以 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvSm91cm5hbGluZ19ibG9ja19kZXZpY2U=" title="https://en.wikipedia.org/wiki/Journaling_block_device">jbd2<i class="fa fa-external-link"></i></span> 为切入点，介绍了常见的 kernel thread 从 create 到 wake_up 再到 running task 的一系列流程。</p>
+<a id="more"></a>
+
+
+
+<h2 id="Kernel-Thread"><a href="#Kernel-Thread" class="headerlink" title="Kernel Thread"></a>Kernel Thread</h2><p>本节简要讲述了 kernel thread 的一些特性，具体的 kernel thread 细节并未给出，可以参照 <span class="exturl" data-url="aHR0cDovL2FiY2R4eXprLmdpdGh1Yi5pby9ibG9nLzIwMTgvMDEvMTAva2VybmVsLXRhc2stdGhyZWFkLw==" title="http://abcdxyzk.github.io/blog/2018/01/10/kernel-task-thread/">Linux 内核线程及普通进程总结<i class="fa fa-external-link"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly9zeXNwbGF5LmluL2Jsb2cvbGludXgta2VybmVsLWludGVybmFscy8yMDE1LzA0L2tlcm5lbC10aHJlYWRzLw==" title="https://sysplay.in/blog/linux-kernel-internals/2015/04/kernel-threads/">Kernel Threads<i class="fa fa-external-link"></i></span> 这两篇文章来学习。本文的侧重点在 kernel thread 的创建上。</p>
+<h3 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h3><p>Linux 操作系统当中有许多为 user 和 kernel 提供服务的 threads，运行在 user space 的是 user threads，同理，运行在 kernel space 的是 kernel threads。</p>
+<p>我们通常都将这些运行在 kernerl space 的服务进程称之为 kernel threads，是因为所有的 kernel threads 都共享 kernel address space，因而共享同一份 kernel page table。所以我们称之为“内核线程”，原因就在于进程一般都是有自己独立的地址空间的。</p>
+<h3 id="Create"><a href="#Create" class="headerlink" title="Create"></a>Create</h3><p>kernel threads 的创建和 user space threads 不同，Linux kernel 为程序员提供了 2 种创建 kernel threads 的途径，1) 在 kernel code 中添加 kernel thread 创建代码，2) 使用 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTG9hZGFibGVfa2VybmVsX21vZHVsZQ==" title="https://en.wikipedia.org/wiki/Loadable_kernel_module">loadable kernel module<i class="fa fa-external-link"></i></span> 的方法动态加载模块。 </p>
+<h4 id="Show-kernel-threads"><a href="#Show-kernel-threads" class="headerlink" title="Show kernel threads"></a>Show kernel threads</h4><p>由于 kernel threads 的特性，我们可以用以下语句来列出当前操作系统当中所有的 kernel threads</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ps -e -o pid,ppid,pgid,args | awk <span class="string">'$3==0'</span></span></span><br><span class="line">    2     0     0 [kthreadd]</span><br><span class="line">    4     2     0 [kworker/0:0H]</span><br><span class="line">    6     2     0 [mm_percpu_wq]</span><br><span class="line">    7     2     0 [ksoftirqd/0]</span><br><span class="line">    ....</span><br></pre></td></tr></table></figure>
+
+<p>由于数目过多所以这里只列出了 4 个，注意  <code>pid=2</code> 的线程 <code>kthreadd</code>，它是专门负责创建内核线程的内核线程，目前 Linux 内核提供了多个能够创建内核线程的函数，如 <code>kernel_thread()</code>，<code>kthread_create()</code> 等等，但是为了能够统一接口，因此在上述线程中，只有 <code>kthreadd</code> 内核线程是由 <code>kernel_thread()</code> 函数创建，其余的 kernel threads 都是由 <code>kthreadd</code> 对应的函数 <code>kthreadd()</code> 创建的。</p>
+<h4 id="kthreadd"><a href="#kthreadd" class="headerlink" title="kthreadd"></a>kthreadd</h4><p>前文提到，除了 <code>kthreadd</code> 自身，其他所有的内核线程均由该内核线程创建，现在我们来看它<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbml0L21haW4uYyNMNDA2" title="https://elixir.bootlin.com/linux/latest/source/init/main.c#L406">创建的位置<i class="fa fa-external-link"></i></span></p>
+<p><img src="/images/kthread-jbd2/kthreadd.png" alt="kthreadd.png"></p>
+<p>这段代码位于 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbml0L21haW4uYyNMNDI4" title="https://elixir.bootlin.com/linux/latest/source/init/main.c#L428">/init/main.c<i class="fa fa-external-link"></i></span> 文件中的 <code>rest_init(void)</code> 函数中，该函数一共创建了 <strong>2</strong> 个内核线程，分别为 <code>kernel_init</code> <em>(pid=1)</em> 和 <code>kthreadd</code> <em>(pid=2)</em>，使用的都是 <code>kernel_thread()</code> 函数，其中 <code>kernel_init</code> 线程在做完 init 工作之后，就被用户态的 <code>systemd</code> 取代了。</p>
+<p>在上述代码可以看到，在使用 <code>kernel_thread()</code> 创建了 <code>kthreadd</code> 线程之后，将其 <code>task_struct</code> 保存在 <code>kthreadd_task</code> 变量中，该变量是定义在 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwva3RocmVhZC5jI0wzMA==" title="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L30">thread.c<i class="fa fa-external-link"></i></span> 中的全局变量</p>
+<p><img src="/images/kthread-jbd2/kthreadd-task.png" alt="kthreadd.png"></p>
+<p>在使用 <code>kthread_create</code> 和 <code>kthread_run</code> 这两个函数的时候，会使用到该全局变量。</p>
+<p>下文会结合这两个函数来拓展 <code>kthreadd</code> 内核线程的作用。这里就暂且介绍这么多。</p>
+<h4 id="kthread-create-amp-kthread-run"><a href="#kthread-create-amp-kthread-run" class="headerlink" title="kthread_create &amp; kthread_run"></a>kthread_create &amp; kthread_run</h4><p>前文讲到，绝大部分（除了 <code>kthreadd</code> 和 <code>kernel_init</code> ）内核线程都是由调用 <code>kthread_create</code> 或 <code>kthread_run</code> 函数创建的，它们的父进程都是 <code>kthreadd</code>，且 ppid=2。本节详细介绍这两个函数是如何创建内核线程的。</p>
+<p>首先是函数的定义，<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbmNsdWRlL2xpbnV4L2t0aHJlYWQuaCNMMjU=" title="https://elixir.bootlin.com/linux/latest/source/include/linux/kthread.h#L25">kthread_create<i class="fa fa-external-link"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbmNsdWRlL2xpbnV4L2t0aHJlYWQuaCNMNDM=" title="https://elixir.bootlin.com/linux/latest/source/include/linux/kthread.h#L43">kthread_run<i class="fa fa-external-link"></i></span> 都定义在同一文件 <code>kthread.h</code></p>
+<p><img src="/images/kthread-jbd2/kthread_create.png" alt="kthreadd.png"></p>
+<p><img src="/images/kthread-jbd2/kthread_run.png" alt="kthreadd.png"></p>
+<p><strong>参数的含义如下所示</strong></p>
+<ul>
+<li><code>thread_fn</code> - 该线程运行的函数</li>
+<li><code>data</code> - <code>@threadfn()</code> 的数据指针</li>
+<li><code>namefmt</code> - printf-style 格式化字符串（线程的名称）</li>
+<li><code>args/__VA_ARGS__</code> - 格式化字符串的参数</li>
+</ul>
+<p>这两个函数都是宏定义，其中 <code>kthread_create()</code> 调用了 <code>kthread_create_on_node()</code> 函数，其内容后续会详细解析；<code>kthread_run()</code> 有 2 部分，第 1 部分调用 <code>kthread_create</code> 创建内核线程，第 2 部分调用 <code>wake_up_process()</code> 唤醒创建的线程。</p>
+<p><strong>需要注意的是</strong>，使用 <code>kthread_create()</code> 创建的 kernel thread，处于 <strong>stopped state</strong>，如果要唤醒的话需要另外调用 <code>wake_up_process()</code> 函数，<u>这是目前我所发现的唯一一个唤醒该 thread 的方法。</u></p>
+<h4 id="kthread-create-on-node"><a href="#kthread-create-on-node" class="headerlink" title="kthread_create_on_node"></a>kthread_create_on_node</h4><p>函数如下所示，它同样位于 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwva3RocmVhZC5jI0wzNzk=" title="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L379">kthread.c<i class="fa fa-external-link"></i></span> 中</p>
+<p><img src="/images/kthread-jbd2/kthread_create_on_node.png" alt="Kthread_create_on_node.png"></p>
+<p>根据 source code 的注释，该函数为 <code>__kthread_create_on_node()</code> 的 helper，并且创建的线程处于 stopped state，需要调用 <code>wake_up_process()</code> 来唤醒。</p>
+<p>继续观察 <a href="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L293" target="_blank" rel="noopener"><code>__kthread_create_on_node()</code></a> </p>
+<p><img src="/images/kthread-jbd2/kthread_on_node.png" alt="Kthread_create_on_node.png"></p>
+<p>该函数主要做了 2 件事情</p>
+<ol>
+<li>将一个 <strong>entry</strong> ( <code>create-&gt;list</code> ) 插入 <strong>kthread_create_list</strong></li>
+<li>唤醒 ( 使用 <code>wake_up_process(kthreadd_task)</code> ) <strong>kthreadd</strong></li>
+</ol>
+<p>之后做的就是一些 kernel thread 优先级设置等的初始化工作，这里就不做赘述。</p>
+<p>代码中可以看的很清楚，<code>struct kthread_create_info*</code> 类型的变量 <strong>create</strong>，包含了线程函数、数据指针、CPU Node和一个信号量 <code>create-&gt;done</code>，这个信号量将会用于等待 <strong>kthreadd</strong> 线程创建线程的同步。</p>
+<p>在创建 <strong>create</strong> 并将它放入 <strong>kthread_create_list</strong> 之后，就只需要唤醒 <strong>kthreadd</strong> 并等待完成即可。</p>
+<p>这里简要介绍一下 <strong>kthread_create_list</strong> </p>
+<p><img src="/images/kthread-jbd2/kthread_create_list.png" alt="Kthread_create_on_node.png"></p>
+<p>这个 list 使用 <code>LIST_HEAD()</code> 来定义，这是 Linux kernel 提供的一个 list 模版，<strong>kthread_create_list</strong> 用来存放待创建的 kernel thread，由于在 SMP 模式下，可能会有多个 kernel thread create requests，因此创建 list 来批量申请和创建，有利于 kernel 的工作效率。</p>
+<p>添加了新 kernel thread 相关信息之后，就是 <strong>kthreadd</strong> 的工作了。</p>
+<h4 id="kthreadd-1"><a href="#kthreadd-1" class="headerlink" title="kthreadd()"></a>kthreadd()</h4><p>kthreadd() 的函数定义在 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwva3RocmVhZC5jI0w1Njg=" title="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L568">kthread.c<i class="fa fa-external-link"></i></span> 文件中</p>
+<p><img src="/images/kthread-jbd2/kthreadd().png" alt="Kthread_create_on_node.png"></p>
+<p>我们主要集中观察 <code>for (;;)</code> 循环中的代码。</p>
+<p>在循环中 <strong>kthreadd</strong> 首先检查 <strong>kthread_create_list</strong> 中是否有 <strong>entry</strong>，如果没有，那就说明目前没有需要被创建的 kernel thread，那么 <strong>kthreadd</strong> 会调用 <code>schedule()</code> 函数主动放弃 CPU，它会处于一个等待唤醒的状态，之前提到的 <code>wake_up_process()</code> 就可以唤醒它。</p>
+<p>在被唤醒之后，<strong>kthreadd</strong> 会遍历 <strong>kthread_create_list</strong>，将其中所有的 <strong>entry</strong> 都取出，调用 <code>create_kthread()</code> 函数来创建新的 kernel thread。注意函数的参数是 <code>create</code>，因而我们判断在函数内部肯定有关于之前提到的信号量 <code>create-&gt;done</code> 的修改。</p>
+<p>我们进入 <code>create_kthread()</code> 函数<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwva3RocmVhZC5jI0wyNzA=" title="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L270">一探究竟<i class="fa fa-external-link"></i></span></p>
+<p><img src="/images/kthread-jbd2/create_kthread.png" alt="Kthread_create_on_node.png"></p>
+<p>可以看到，该函数中也是调用 <code>kernel_thread()</code> 函数来创建 kernel thread，因此可以推断出这个是所有 kernel thread 最终的创建入口。</p>
+<p>当返回的 pid &lt; 0 时，说明创建的过程中出现了一些错误，如果没有出错，在 <code>kernel_thread()</code> 函数内部应该有对于 <code>create-&gt;done</code> 参数的修改。类似这里 <code>Line 288: complete(done)</code>。</p>
+<p>为了验证一下猜测，进入 <code>kernel_thread()</code> <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwvZm9yay5jI0wyNDk5" title="https://elixir.bootlin.com/linux/latest/source/kernel/fork.c#L2499">函数的定义<i class="fa fa-external-link"></i></span>处观察一下</p>
+<p><img src="/images/kthread-jbd2/kernel_thread.png" alt="Kthread_create_on_node.png"></p>
+<p>遗憾的是，并没有发现任何关于 <code>create-&gt;done</code> 相关的代码。当然，我也进入 <code>_do_fork()</code> 函数中观察过，它负责的是产生新的进程，并不负责信号同步。</p>
+<p>仔细思索一下，在上方 <code>create_thread()</code> 函数中，调用了 <code>kernel_thread()</code> 来创建新的进程，这个时候的参数和之前创建 <strong>kthreadd</strong> 的语句有些不同。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// create kthreadd (pid = 2)</span></span><br><span class="line">pid = kernel_thread(kthreadd, <span class="literal">NULL</span>, CLONE_FS | CLONE_FILES);</span><br><span class="line"></span><br><span class="line"><span class="comment">// create normal kernel thread</span></span><br><span class="line">pid = kernel_thread(kthread, create, CLONE_FS | CLONE_FILES | SIGCHLD);</span><br></pre></td></tr></table></figure>
+
+<p>如上述代码所示，<strong>kthreadd</strong> 的创建过程中，<code>kernel_thread()</code> 函数的第一个参数是 <code>kthreadd()</code> 函数指针，但在创建一般的 kernel thread 时，第一个参数一律都是 <code>kthread</code>，所以可以推断出，在 <code>kthread()</code> 当中肯定做了以下操作</p>
+<ol>
+<li>调用 <code>create-&gt;threadfn</code> 满足真正的内核线程创建需求</li>
+<li>调用 <code>complete(create-&gt;done)</code> 同步信号量</li>
+</ol>
+<p>我们进入该<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9rZXJuZWwva3RocmVhZC5jI0wyMTQ=" title="https://elixir.bootlin.com/linux/latest/source/kernel/kthread.c#L214">函数的位置<i class="fa fa-external-link"></i></span>进行确认</p>
+<p><img src="/images/kthread-jbd2/kthread.png" alt="Kthread_create_on_node.png"></p>
+<p>果然，函数内部调用了 <code>complete(done)</code> 同步信号量，使得 <code>__kthread_create_on_node()</code> 函数可以继续运行，同时调用 <code>create-&gt;threadfn</code> 来运行承担工作任务的线程函数。</p>
+<h4 id="wait-for-completion-amp-complete"><a href="#wait-for-completion-amp-complete" class="headerlink" title="wait_for_completion &amp; complete"></a>wait_for_completion &amp; complete</h4><p>最后引用 Linux kernel 文档中的说明来为此处的信号量同步机制做个总结</p>
+<blockquote>
+<p>There are also some helper functions for checking the state of completions. Note that while initialization must happen first, the waiting and signaling part can happen in any order. I.e. it&#39;s entirely normal for a thread to have marked a completion as &#39;done&#39; before another thread checks whether it has to wait for it.</p>
+<p>To use completions you need to <code>#include &lt;linux/completion.h&gt;</code> and create a static or dynamic variable of type &#39;struct completion&#39;, which has only two fields:</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">completion</span> &#123;</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> done;</span><br><span class="line">	<span class="keyword">wait_queue_head_t</span> wait;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>This provides the <code>-&gt;wait</code> waitqueue to place tasks on for waiting (if any), and the <code>-&gt;done</code> completion flag for indicating whether it&#39;s completed or not.</p>
+<p>Completions should be named to refer to the event that is being synchronized on.<br>A good example is:</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wait_for_completion(&amp;early_console_added);</span><br><span class="line">complete(&amp;early_console_added);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Good, intuitive naming (as always) helps code readability. Naming a completion &#39;complete&#39; is not helpful unless the purpose is super obvious...</p>
+</blockquote>
+<h2 id="jbd2"><a href="#jbd2" class="headerlink" title="jbd2"></a>jbd2</h2><p>JBD 全称是 Journaling block device，作用是进行文件系统日志写入，它独立于文件系统之外。目前采用 JBD 的文件系统有 ext3、ext4 和 OCFS2。其中 ext4 使用的是 JBD 的一个分支 <span class="exturl" data-url="aHR0cHM6Ly9sa21sLm9yZy9sa21sLzIwMDYvOC85LzQzNA==" title="https://lkml.org/lkml/2006/8/9/434">JBD2<i class="fa fa-external-link"></i></span>。</p>
+<h3 id="Location"><a href="#Location" class="headerlink" title="Location"></a>Location</h3><p>前文中提到了查看当前所有 kernel thread 的方法，在这里我们稍作改动</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ps -e -o pid,ppid,pgid,args | awk <span class="string">'$3==0'</span> | grep jbd</span></span><br><span class="line">  425     2     0 [jbd2/sda2-8]</span><br></pre></td></tr></table></figure>
+
+<p>可以看到输出了名为 <code>[jbd2/sda2-8]</code> 的 kernel thread。这里的 <code>sda2-8</code> 是设备号，我们可以在 <code>/proc/fs/jbd2/</code> 目录下查看目前运行的 jbd2 线程的虚拟文件目录</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls /proc/fs/jbd2 </span></span><br><span class="line">sda2-8</span><br></pre></td></tr></table></figure>
+
+<p>具体的 jbd2 做的工作不在本文的讨论范围之内，接下来重点介绍创建 jbd2 内核线程的位置。</p>
+<p>在 Linux kernel 的代码中搜索 <code>jbd</code> 的关键字</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ag <span class="string">", \"jbd2"</span> .</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> ...</span></span><br><span class="line">fs/jbd2/journal.c</span><br><span class="line">279:    t = kthread_run(kjournald2, journal, "jbd2/%s",</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>ag</code> 命令或者 <code>grep</code> 命令根据 jbd2 内核线程的名称来搜索创建位置，根据上述输出我们得知 jbd2 内核线程是在 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9mcy9qYmQyL2pvdXJuYWwuYyNMMjcz" title="https://elixir.bootlin.com/linux/latest/source/fs/jbd2/journal.c#L273">journal.c<i class="fa fa-external-link"></i></span> 文件当中定义的创建代码。</p>
+<p><img src="/images/kthread-jbd2/create_kjournald.png" alt="Kthread_create_on_node.png"></p>
+<h3 id="Create-and-Sechdule"><a href="#Create-and-Sechdule" class="headerlink" title="Create and Sechdule"></a>Create and Sechdule</h3><p>上节我们通过字符串匹配的方法找到了 jbd2 内核线程的创建位置，同时获取了创建语句</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">t = kthread_run(kjournald2, journal, <span class="string">"jbd2/%s"</span>,</span><br><span class="line">			journal-&gt;j_devname);</span><br></pre></td></tr></table></figure>
+
+<p>结合之前介绍的 <code>kthread_run()</code> 函数的参数说明，可以推断出 <code>kjournald2</code> 为提供服务的线程函数指针，<code>journal</code> 为函数的数据指针，同时我们也了解到之前获取的 <code>sda2-8</code> 来自于 <code>journal-&gt;j_devname</code>。</p>
+<p>这里的 <strong>journal</strong> struct instance 在后面的分析中会频繁出现，现在我们只需要将其理解为 jbd2 kernel thread 会用到的一个 data structure 即可。</p>
+<p>首先进入 <code>kjournald2</code> 的<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9mcy9qYmQyL2pvdXJuYWwuYyNMMTY5" title="https://elixir.bootlin.com/linux/latest/source/fs/jbd2/journal.c#L169">函数所在<i class="fa fa-external-link"></i></span>分析其内容</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">kjournald2</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">journal_t</span> *journal = arg;</span><br><span class="line">	<span class="keyword">transaction_t</span> *transaction;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Set up an interval timer which can be used to trigger a commit wakeup</span></span><br><span class="line">	<span class="comment">// after the commit interval expires</span></span><br><span class="line">	timer_setup(&amp;journal-&gt;j_commit_timer, commit_timeout, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	set_freezable();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Record that the journal thread is running</span></span><br><span class="line">	journal-&gt;j_task = current;</span><br><span class="line">	wake_up(&amp;journal-&gt;j_wait_done_commit);</span><br><span class="line"></span><br><span class="line">	memalloc_nofs_save();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// And now, wait forever for commit wakeup events.</span></span><br><span class="line">	write_lock(&amp;journal-&gt;j_state_lock);</span><br></pre></td></tr></table></figure>
+
+<p>为了方便说明，我省略了部分本文分析中不重要的注释。</p>
+<p>在函数的开头，定义了一个重要的变量 <code>journal</code>，它的类型为 <code>journal_t *</code>，是一个指向 jbd2 <span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbmNsdWRlL2xpbnV4L2piZDIuaCNMMTA0" title="https://elixir.bootlin.com/linux/latest/source/include/linux/jbd2.h#L104">相关信息结构体<i class="fa fa-external-link"></i></span>的指针，它的值来自于调用 <code>kthread_run()</code> 函数时传递的 <code>journal</code> 参数。</p>
+<p>在这里我们需要注意以下几件事</p>
+<ul>
+<li>设定 <strong>timer</strong>，调用 <code>timer_setup()</code> 初始化一个定时器，将它放入 <code>journal-&gt;j_commit_timer</code> 中。这个定时器之后会被用于<strong>在提交事务时</strong>定时唤醒该 kernel thread 进行作业</li>
+<li>将 <code>current</code> 指针存入 <code>journal-&gt;j_task</code> 中，这样在后续的唤醒操作中就可以获取到该线程的 <strong>task_struct</strong></li>
+<li>调用 <code>wake_up()</code> 唤醒存储在 <code>journal-&gt;j_wait_done_commit</code> 的等待队列，这与该 jbd2 kernel thread 的 <strong>create/destroy</strong> 有关，此处不再赘述，感兴趣的话直接 cross reference <code>j_wait_done_commit</code> 即可</li>
+</ul>
+<p>在初始化了相关变量之后，<code>kjournald2()</code> 进入了循环，先看下面这段代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">loop:</span><br><span class="line">	<span class="comment">// some code hide</span></span><br><span class="line">	<span class="keyword">if</span> (journal-&gt;j_commit_sequence != journal-&gt;j_commit_request) &#123;</span><br><span class="line">		jbd_debug(<span class="number">1</span>, <span class="string">"OK, requests differ\n"</span>);</span><br><span class="line">		write_unlock(&amp;journal-&gt;j_state_lock);</span><br><span class="line">		del_timer_sync(&amp;journal-&gt;j_commit_timer);</span><br><span class="line">		jbd2_journal_commit_transaction(journal);</span><br><span class="line">		write_lock(&amp;journal-&gt;j_state_lock);</span><br><span class="line">		<span class="keyword">goto</span> loop;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了说明方便，这里省略了部分代码。这里有两个重要的变量</p>
+<ul>
+<li><code>journal-&gt;j_commit_sequence</code> 最近一次 commit 的 transaction 序列号</li>
+<li><code>journal-&gt;j_commit_request</code> 申请 commit 的 transaction 序列号</li>
+</ul>
+<p><code>kjournald2()</code> 通过判断这两个序列号是否相同，来决定是否进行 <strong>commit transaction</strong> 操作。当这两个序列号不同的时候，就意味着当前需要被 commit 的 transaction 并未 commit 到外存储器当中，因而调用 <code>jbd2_journal_commit_transaction()</code> 来进行提交。</p>
+<p>除了一些进程同步之间的锁之外，可以看到这里有一个函数 <code>del_timer_sync()</code> 的调用，实际上这是因为在外部函数中，会通过 <code>add_timer()</code> 来为 <code>kjournald2()</code> 函数设置定时器，时间一到就会唤醒。这里因为完成了 transaction commit，就不再需要 timer 了。下次再有相关 transaction 要提交的时候，再设置 timer 即可。</p>
+<p>继续 go through 函数的代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// after above</span></span><br><span class="line">    wake_up(&amp;journal-&gt;j_wait_done_commit);</span><br><span class="line">    <span class="keyword">if</span> (freezing(current)) &#123;</span><br><span class="line">        <span class="comment">// some code</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        </span><br><span class="line">        DEFINE_WAIT(wait);</span><br><span class="line">        <span class="keyword">int</span> should_sleep = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        prepare_to_wait(&amp;journal-&gt;j_wait_commit, &amp;wait, TASK_INTERRUPTIBLE);</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (journal-&gt;j_commit_sequence != journal-&gt;j_commit_request)</span><br><span class="line">            should_sleep = <span class="number">0</span>;</span><br><span class="line">        transaction = journal-&gt;j_running_transaction;</span><br><span class="line">        <span class="keyword">if</span> (transaction &amp;&amp; time_after_eq(jiffies, transaction-&gt;t_expires))</span><br><span class="line">            should_sleep = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (journal-&gt;j_flags &amp; JBD2_UNMOUNT)</span><br><span class="line">            should_sleep = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (should_sleep) &#123;</span><br><span class="line">            write_unlock(&amp;journal-&gt;j_state_lock);</span><br><span class="line">            schedule();</span><br><span class="line">            write_lock(&amp;journal-&gt;j_state_lock);</span><br><span class="line">        &#125;</span><br><span class="line">        finish_wait(&amp;journal-&gt;j_wait_commit, &amp;wait);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    jbd_debug(<span class="number">1</span>, <span class="string">"kjournald2 wakes\n"</span>);</span><br><span class="line"></span><br><span class="line">    transaction = journal-&gt;j_running_transaction;</span><br><span class="line">    <span class="keyword">if</span> (transaction &amp;&amp; time_after_eq(jiffies, transaction-&gt;t_expires)) &#123;</span><br><span class="line">        journal-&gt;j_commit_request = transaction-&gt;t_tid;</span><br><span class="line">        jbd_debug(<span class="number">1</span>, <span class="string">"woke because of timeout\n"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">goto</span> loop;</span><br></pre></td></tr></table></figure>
+
+<p>以上是循环中剩余的代码，在进行完必要的初始化之后，<code>kjournald2()</code> 进行了<strong>一些判断</strong>，如果符合，则会进行 <code>schedule()</code>，主动放弃 CPU 资源，进入等待唤醒的状态。</p>
+<p>上述代码有几个部分需要注意</p>
+<ol>
+<li><code>prepare_to_wait()</code> 和 <code>finish_wait()</code> 函数，这一对函数用于<strong>处理等待队列</strong></li>
+<li><code>should_sleep</code> 变量，根据一系列条件判断，决定是否自主 <strong>schedule</strong></li>
+<li><code>journal-&gt;j_commit_request</code> 更新，后续进程 transaction commit 操作</li>
+</ol>
+<p>本文聚焦于 kernel thread 的工作机理，因此这里我们着重于<strong>唤醒(wake up)</strong>和<strong>作业(workloads)</strong>两个部分，<strong>唤醒</strong>包括 <code>kjournald2</code> 如何 schedule 以及其他 kernel function 如何 wake up 它；<strong>作业</strong>包括 <code>kjournald2</code> 如何判断是否 commit 以及如何触发 <code>kjournald2</code> 的 commit。</p>
+<h3 id="Wake-Up"><a href="#Wake-Up" class="headerlink" title="Wake Up"></a>Wake Up</h3><h4 id="Sleep"><a href="#Sleep" class="headerlink" title="Sleep"></a>Sleep</h4><p>前文提到 <code>kjournald</code> 中使用了两个函数来处理等待队列，这里我们再回顾一下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">prepare_to_wait(&amp;journal-&gt;j_wait_commit, &amp;wait, TASK_INTERRUPTIBLE);</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">	schedule();</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">finish_wait(&amp;journal-&gt;j_wait_commit, &amp;wait);</span><br></pre></td></tr></table></figure>
+
+<p>这里需要注意，<code>prepare_to_wait</code> 和 <code>finish_wait</code> 并没有做放弃 CPU 的操作，完成这一行为的是 <code>schedule()</code>，有些 kernel thread 会调用 <code>ssleep()</code> 来放弃 CPU。前两个函数实际上是对 shared data structure <strong>journal</strong> 的修改。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @j_wait_commit: Wait queue to trigger commit.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">wait_queue_head_t</span>	j_wait_commit;</span><br></pre></td></tr></table></figure>
+
+<p><code>j_wait_commit</code> 是等待队列的头指针，如<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9pbmNsdWRlL2xpbnV4L2piZDIuaCNMODQw" title="https://elixir.bootlin.com/linux/latest/source/include/linux/jbd2.h#L840">上述代码<i class="fa fa-external-link"></i></span>所示，<code>prepare_to_wait</code> 函数将之前用 <code>DEFINE_WAIT(wait)</code> 初始化的 <code>wait</code> 变量作为 entry 插入到等待队列中。 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEFINE_WAIT_FUNC(name, function)					\</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">wait_queue_entry</span> <span class="title">name</span> = &#123;</span>					\</span><br><span class="line">		.<span class="keyword">private</span>	= current,					\</span><br><span class="line">		.func		= function,					\</span><br><span class="line">		.entry		= LIST_HEAD_INIT((name).entry),			\</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">#define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)</span><br></pre></td></tr></table></figure>
+
+<p>如上所示，<code>wait</code> 变量中包含了指向当前 <code>kjournald2()</code> 的指针，同时也有唤醒函数 <code>autoremove_wake_function</code>，这个函数会唤醒 <code>.private</code> 指向的线程。</p>
+<p>之后 <code>kjournald2</code> 调用了 <code>finish_wait</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">finish_wait</span><span class="params">(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> flags;</span><br><span class="line">	__set_current_state(TASK_RUNNING);</span><br><span class="line">	<span class="keyword">if</span> (!list_empty_careful(&amp;wq_entry-&gt;entry)) &#123;</span><br><span class="line">		spin_lock_irqsave(&amp;wq_head-&gt;lock, flags);</span><br><span class="line">		list_del_init(&amp;wq_entry-&gt;entry);</span><br><span class="line">		spin_unlock_irqrestore(&amp;wq_head-&gt;lock, flags);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该函数设置当前 thread 状态为 Running，并从等待队列当中删掉对应的 entry(如果没有被删掉的话)。</p>
+<p><strong>至此，关于 kjournald2 如何处理等待队列和 schedule 自身的分析都已经结束了。</strong></p>
+<p>接下来是其他 kernel function 如何 wake up 它。</p>
+<h4 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a>Timer</h4><p>前文提到，在 <code>kjournald2</code> 的代码中，有一段关于 timer 的初始化工作</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Set up an interval timer which can be used to trigger a commit wakeup</span></span><br><span class="line"><span class="comment">// after the commit interval expires</span></span><br><span class="line">timer_setup(&amp;journal-&gt;j_commit_timer, commit_timeout, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<p>这里初始化了 <code>journal-&gt;j_commit_timer</code> 变量，并设置了 <code>commit_timeout</code> 函数用来在 timer 到时间点之后调用。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">commit_timeout</span><span class="params">(struct timer_list *t)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">journal_t</span> *journal = from_timer(journal, t, j_commit_timer);</span><br><span class="line">	wake_up_process(journal-&gt;j_task);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到在 <code>commit_timeout</code> 内部调用了 <code>wake_up_process</code> 来<strong>唤醒 kjournald2</strong>。</p>
+<p><strong>那么 timer 的机制大概就是以下几个步骤</strong></p>
+<ol>
+<li><code>kjournald2</code> 初始化 timer，放入 <code>journal-&gt;j_commit_timer</code> 中</li>
+<li><code>kjournald2</code> 调用 schedule 进入 sleep 状态</li>
+<li>其他 kernel function 调用 <code>add_timer()</code> 添加时钟</li>
+<li>时钟到期自动调用初始化时加入的 <code>commit_timeout</code> 函数，唤醒 <code>kjournald2</code></li>
+<li><code>kjournald2</code> 被唤醒，调用 <code>del_timer_sync()</code> 删掉时钟，并进行作业</li>
+<li>返回<strong>第 2 步</strong></li>
+</ol>
+<p>第 3 步中指的<strong>其他 kernel function</strong>，我找了一个<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9mcy9qYmQyL3RyYW5zYWN0aW9uLmMjTDEwMg==" title="https://elixir.bootlin.com/linux/latest/source/fs/jbd2/transaction.c#L102">例子<i class="fa fa-external-link"></i></span></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">jbd2_get_transaction</span><span class="params">(<span class="keyword">journal_t</span> *journal, <span class="keyword">transaction_t</span> *transaction)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">	<span class="comment">/* Set up the commit timer for the new transaction. */</span></span><br><span class="line">	journal-&gt;j_commit_timer.expires = round_jiffies_up(transaction-&gt;t_expires);</span><br><span class="line">	add_timer(&amp;journal-&gt;j_commit_timer);</span><br><span class="line"></span><br><span class="line">	J_ASSERT(journal-&gt;j_running_transaction == <span class="literal">NULL</span>);</span><br><span class="line">	journal-&gt;j_running_transaction = transaction;</span><br><span class="line">    <span class="comment">// some code</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个函数中，设定了 <code>journal-&gt;j_commit_timer.expires</code> 作为计时期限，同时我们也可以看到函数内部运行 <code>journal-&gt;j_running_transaction = transaction</code> 更新了 <strong>transcation</strong> 变量，以便后续 <code>kjournald2</code> 进行作业。</p>
+<h4 id="wake-up"><a href="#wake-up" class="headerlink" title="wake_up"></a>wake_up</h4><p>前文我们谈到，<code>kjournald2</code> 函数内部调用了 <code>prepare_to_wait</code> 和 <code>finish_wait</code> 来处理等待队列。</p>
+<p>当 jbd2 的内核线程函数 <code>kjournald2</code> 调用 <code>schedule()</code> 申请调度之后，其他 kernel function 可以通过 <code>wake_up()</code> 函数，利用 <code>journal-&gt;j_wait_commit</code> 里面存放的 <code>wait</code> entry 为参数，就可以成功唤醒内核线程。</p>
+<p>下面是一个<span class="exturl" data-url="aHR0cHM6Ly9lbGl4aXIuYm9vdGxpbi5jb20vbGludXgvbGF0ZXN0L3NvdXJjZS9mcy9qYmQyL2pvdXJuYWwuYyNMNDgx" title="https://elixir.bootlin.com/linux/latest/source/fs/jbd2/journal.c#L481">例子<i class="fa fa-external-link"></i></span></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> __jbd2_log_start_commit(<span class="keyword">journal_t</span> *journal, <span class="keyword">tid_t</span> target)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">		wake_up(&amp;journal-&gt;j_wait_commit);</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该函数调用了 <code>wake_up()</code> 函数，唤醒了存放在 <code>j_wait_commit</code> 里面 wait queue 的所有 entry。</p>
+<h4 id="Back-Trace"><a href="#Back-Trace" class="headerlink" title="Back Trace"></a>Back Trace</h4><p>对 <code>__jbd2_log_start_commit</code> 等调用 <code>wake_up</code> 的函数做一个简单的反向 cross reference 追踪，找到它们的源头函数，得到如下结果</p>
+<ul>
+<li>jbd2_log_start_commit<ul>
+<li>__jbd2_journal_force_commit<ul>
+<li>jbd2_journal_force_commit_nested</li>
+<li>jbd2_journal_force_commit</li>
+</ul>
+</li>
+<li>jbd2_complete_transaction<ul>
+<li>ocfs2_sync_file</li>
+<li>ext4_write_inode</li>
+<li>ext4_evict_inode</li>
+<li><strong>ext4_sync_file</strong></li>
+<li>ext4_fallocate</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>上面用<strong>粗体</strong>标出的 <code>ext4_sync_file</code> 会被 <code>sys_fsync()</code>，<code>sys_fdatasync()</code> 和 <code>sys_msync()</code> 这几个 sys call 调用，当然，是在文件系统使用 ext4 的时候。</p>
+<p>利用 kernel thread 的 wake up 机制，可以反向追踪到 sys call，是一个可以拓展的点。</p>
+<h3 id="Workloads"><a href="#Workloads" class="headerlink" title="Workloads"></a>Workloads</h3><p>不管是 timer 还是 wake up，都只能唤醒 <code>kjournald2</code> 内核线程，但不能直接让该线程开始 commit 作业。前文提到该线程会基于 <code>journal-&gt;j_commit_sequence</code> 和 <code>journal-&gt;j_commit_request</code> 这两个变量来判断是否进行 commit 作业，因此要分配工作，肯定需要更改这两个变量。</p>
+<p>同样是在 <code>__jbd2_log_start_commit</code> 函数中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> __jbd2_log_start_commit(<span class="keyword">journal_t</span> *journal, <span class="keyword">tid_t</span> target)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">	journal-&gt;j_commit_request = target;</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">   	wake_up(&amp;journal-&gt;j_wait_commit);</span><br><span class="line">	<span class="comment">// some code</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先给 <code>journal-&gt;j_commit_request</code> 赋了新的 Value，然后再 Call <code>wake_up</code> 函数，这样一来在 <code>kjournald2</code> 的 check 过程中，就可以转到 commit 作业中去。</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>本文以 jbd2 kernel thread 的创建、sleep/wake_up 机制还有作业机制为切入点，分析了 kernel thread 的创建和运行流程。</p>
+<p>一个内核线程的运行流程一般如下所示</p>
+<ol>
+<li>create by some kernel function (<code>kthread_create</code> or <code>kthraed_run</code>)</li>
+<li>waked up by other kernel functions - <code>wake_up</code></li>
+<li>waked up by timer - <code>add_timer()</code></li>
+<li>share a data structure - Loop, until X.a == VALUE</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kernel-thread/" rel="tag"># kernel thread</a>
+              <a href="/tags/linux-kernel/" rel="tag"># linux kernel</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/25/reverse-tools-cheatsheet/" rel="prev" title="reverse tools cheatsheet">
+      <i class="fa fa-chevron-left"></i> reverse tools cheatsheet
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/03/31/wllvm-linux-kernel-no-optimize/" rel="next" title="wllvm-linux-kernel-no-optimize">
+      wllvm-linux-kernel-no-optimize <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kernel-Thread"><span class="nav-number">1.</span> <span class="nav-text">Kernel Thread</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Introduction"><span class="nav-number">1.1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Create"><span class="nav-number">1.2.</span> <span class="nav-text">Create</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Show-kernel-threads"><span class="nav-number">1.2.1.</span> <span class="nav-text">Show kernel threads</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kthreadd"><span class="nav-number">1.2.2.</span> <span class="nav-text">kthreadd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kthread-create-amp-kthread-run"><span class="nav-number">1.2.3.</span> <span class="nav-text">kthread_create &amp; kthread_run</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kthread-create-on-node"><span class="nav-number">1.2.4.</span> <span class="nav-text">kthread_create_on_node</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kthreadd-1"><span class="nav-number">1.2.5.</span> <span class="nav-text">kthreadd()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#wait-for-completion-amp-complete"><span class="nav-number">1.2.6.</span> <span class="nav-text">wait_for_completion &amp; complete</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jbd2"><span class="nav-number">2.</span> <span class="nav-text">jbd2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Location"><span class="nav-number">2.1.</span> <span class="nav-text">Location</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Create-and-Sechdule"><span class="nav-number">2.2.</span> <span class="nav-text">Create and Sechdule</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Wake-Up"><span class="nav-number">2.3.</span> <span class="nav-text">Wake Up</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Sleep"><span class="nav-number">2.3.1.</span> <span class="nav-text">Sleep</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Timer"><span class="nav-number">2.3.2.</span> <span class="nav-text">Timer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#wake-up"><span class="nav-number">2.3.3.</span> <span class="nav-text">wake_up</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Back-Trace"><span class="nav-number">2.3.4.</span> <span class="nav-text">Back Trace</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Workloads"><span class="nav-number">2.4.</span> <span class="nav-text">Workloads</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">3.</span> <span class="nav-text">Conclusion</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

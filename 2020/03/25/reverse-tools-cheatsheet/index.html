@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"tianyuzhou.top","root":"/","scheme":"Gemini","version":"7.7.2","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文介绍了常用的逆向软件的快捷键和参考步骤。（运行在 Windows 平台上，Mac 和 Linux 可能有所不同）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="reverse tools cheatsheet">
+<meta property="og:url" content="https://tianyuzhou.top/2020/03/25/reverse-tools-cheatsheet/index.html">
+<meta property="og:site_name" content="SteinsGate">
+<meta property="og:description" content="本文介绍了常用的逆向软件的快捷键和参考步骤。（运行在 Windows 平台上，Mac 和 Linux 可能有所不同）">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-03-25T12:10:13.000Z">
+<meta property="article:modified_time" content="2023-02-20T10:03:56.476Z">
+<meta property="article:author" content="Tianyu Zhou">
+<meta property="article:tag" content="Wiki">
+<meta property="article:tag" content="win32">
+<meta property="article:tag" content="exploit">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://tianyuzhou.top/2020/03/25/reverse-tools-cheatsheet/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true
+  };
+</script>
+
+  <title>reverse tools cheatsheet | SteinsGate</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SteinsGate</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">enjoy coding</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-fw fa-book"></i>Resources</a>
+
+  </li>
+        <li class="menu-item menu-item-conference">
+
+    <a href="/conference/" rel="section"><i class="fa fa-fw fa-smile-o"></i>Conference</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RpYW55dXpob3U5NQ==" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="https://tianyuzhou.top/2020/03/25/reverse-tools-cheatsheet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Tianyu Zhou">
+      <meta itemprop="description" content="a personal site of Tianyu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SteinsGate">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          reverse tools cheatsheet
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-03-25 20:10:13" itemprop="dateCreated datePublished" datetime="2020-03-25T20:10:13+08:00">2020-03-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-20 18:03:56" itemprop="dateModified" datetime="2023-02-20T18:03:56+08:00">2023-02-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Tools/" itemprop="url" rel="index"><span itemprop="name">Tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文介绍了常用的逆向软件的快捷键和参考步骤。（运行在 Windows 平台上，Mac 和 Linux 可能有所不同）</p>
+<a id="more"></a>
+
+<h2 id="OllyDBG-常用功能"><a href="#OllyDBG-常用功能" class="headerlink" title="OllyDBG 常用功能"></a>OllyDBG 常用功能</h2><h3 id="跟踪"><a href="#跟踪" class="headerlink" title="跟踪"></a>跟踪</h3><ul>
+<li><code>F8</code> step over</li>
+<li><code>F7</code> trace into</li>
+<li><code>F2</code> break point</li>
+<li><code>F4</code> Goto cursor，运行到光标所在处<ul>
+<li>相当于在光标处按 <code>F2</code> 设置断点，再 run 到该处，再按 <code>F2</code> 取消</li>
+<li>注意区别于 <strong>此处为新 eip</strong></li>
+</ul>
+</li>
+<li><code>F9</code> run</li>
+<li><code>ctrl+F9</code> 运行到函数返回处</li>
+<li><code>ctrl+g</code> 地址定位（代码窗、数据窗均可用）</li>
+<li><code>:</code> 给某个地址取一个标号名</li>
+<li><code>;</code> 注释</li>
+<li>函数调用<ul>
+<li>若当前指令为 <code>call</code>，敲回车键即可进入被调函数体</li>
+<li>敲 <code>esc</code> 可以退回</li>
+<li><code>~</code> 可以重现敲回车时经过的路径</li>
+<li>在被调函数中，查看<strong>右下角的堆栈窗口</strong>就可以看到调用该函数的位置</li>
+</ul>
+</li>
+<li>硬件断点<ul>
+<li>在数据窗使用 <code>ctrl+g</code> 定位到变量地址处，再选中该变量值得首字节，右键选择断电和硬件写入/访问，再选择跟踪字节</li>
+<li>选择的字节表示若从该地址开始的 x 字节有被访问就会触发断点</li>
+<li>可以从菜单栏里面的调试删除断点</li>
+<li>硬件断点的个数<strong>最多为 4 个</strong>（CPU 提供 4 个调试寄存器）</li>
+<li>在代码调试的时候，会碰到有些程序会检测代码的 Hash 值，若代码内容改变则会 crash，这个时候可以选择指令，右键，选择断点、硬件执行，就可以把这条指令的首地址放到硬件断点里面</li>
+<li>软件断点的原理是把指令的首字节改为 <code>0xCC</code></li>
+</ul>
+</li>
+<li>双击 <code>eip</code> （寄存器窗）回到当前跟踪到的指令处</li>
+<li><strong>数据窗下方框</strong>输入 <code>? eax</code> 可以查看 eax 寄存器中的十进制和 ASCII 表示</li>
+<li>数据窗格中的<strong>指针首位处敲回车</strong>可以快速跳转到指针指向地址</li>
+</ul>
+<h3 id="修改"><a href="#修改" class="headerlink" title="修改"></a>修改</h3><ul>
+<li>指令修改<ul>
+<li>选中某条指令，输入新指令可以实现对该指令的修改<ul>
+<li>按 <code>alt+backspace</code> 可以把修改的内容恢复原样</li>
+<li>按 <code>ctrl+a</code> 可以重新分析，把代码变为黑色</li>
+</ul>
+</li>
+<li>数据窗中按 <code>ctrl+g</code> 定位到指令的地址处，直接输入 16 进制值就可以修改机器代码</li>
+<li>在代码窗中输入 db 指令，也可以修改当前指令 的机器码，例如</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">+40100F    83 fb 64   cmp  ebx, 0x64</span><br></pre></td></tr></table></figure>
+
+<p>选中上述指令后，输入 <code>db 83 0fb, 0x77</code> 可以把指令改为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">+40100F    83 fb 64   cmp  ebx, 0x77</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>寄存器修改</strong>：选中寄存器的当前值，输入 16 进制可以修改</li>
+<li><strong>标志位修改</strong>：双击标志位的当前值可以让它反转</li>
+<li><strong>eip 修改</strong>：选中目标地址所在行，右键选择此处为新 eip</li>
+</ul>
+<h2 id="IDA-Pro-常用功能"><a href="#IDA-Pro-常用功能" class="headerlink" title="IDA Pro 常用功能"></a>IDA Pro 常用功能</h2><ul>
+<li>函数识别：IDA 能够识别<strong>标准库函数</strong>，也能识别 windows 的 api；如果要让它是被第三方的库函数，如 openssl，则可以通过 IDA 自带的工具 <strong>flair</strong> 先对 openssl.lib 进行特征提取，生成 .sig 文件，再在 IDA 中按下 <code>shift + F5</code> 加入 .sig 文件，就可以对 openssl.lib 中包括的所有函数进行识别。</li>
+<li>地址定位：<code>g</code> 输入一个地址</li>
+<li>注释：分号 <code>;</code></li>
+<li>把某个地址重命名为标号或者变量名：<code>n</code></li>
+<li>搜索字符串：<code>alt+t</code>，<strong>注意字符串不能加引号</strong></li>
+<li>搜索 16 进制值：<code>alt+b</code><ul>
+<li>也可以搜索加了双引号的字符串</li>
+<li>通常在 16 进制模式下 <code>Hex View-1</code> 使用</li>
+</ul>
+</li>
+<li>在<strong>汇编模式(IDA View-A)</strong>下按 <code>F5</code> 可以把当前的汇编指令转化为 C 语言</li>
+<li>数据类型变换<ul>
+<li><code>u</code>：让当前地址处的数据或指令变成 undefined</li>
+<li><code>d</code>：改变当前变量的类型<ul>
+<li>db 单字节，dw 双字节，dd 四字节</li>
+<li>按 <code>Alt+D</code> 可以选择其它类型如 float、double 等</li>
+</ul>
+</li>
+<li><code>a</code>：把当前地址处的内容识别为字符串</li>
+<li><code>*</code>：把当前地址处的内容识别为一个数组</li>
+<li><code>c</code>：把当前地址处的内容识别为指令</li>
+<li><code>Shift+F9</code> 自定义结构类型<ul>
+<li>选中某个地址，再 <code>Alt+Q</code> 可以把此地址处的内容定义为结构变量</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>ctrl+PageUp</code> 快速移动到顶部</li>
+<li>交叉引用 (cross reference)<ul>
+<li>把光标定位到某个变量或某个函数的首地址所在行，点菜单 <code>view-&gt;open subview-&gt;cross reference</code> 可以查看到程序中有哪些指令引用了该地址</li>
+</ul>
+</li>
+</ul>
+<h2 id="如何判断某个call是否重要"><a href="#如何判断某个call是否重要" class="headerlink" title="如何判断某个call是否重要"></a>如何判断某个call是否重要</h2><p>跟踪到某个 call 时，先用 <code>IDA</code> 对比排除是否为库函数(若为库函数就没有必要跟踪进去)，再检查参数是否是你关注的内容，最后检查返回值是否为你关注的内容，其中返回值除了 <code>eax</code> 外，有些函数会把返回值填入某个参数所指向的 <code>buf</code> 中。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Wiki/" rel="tag"># Wiki</a>
+              <a href="/tags/win32/" rel="tag"># win32</a>
+              <a href="/tags/exploit/" rel="tag"># exploit</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/19/win32-exploit-adverse-2/" rel="prev" title="win32-exploit-adverse-2">
+      <i class="fa fa-chevron-left"></i> win32-exploit-adverse-2
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/03/27/Kernel-Thread-jbd2-kjournald/" rel="next" title="Kernel Thread jbd2 kjournald">
+      Kernel Thread jbd2 kjournald <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OllyDBG-常用功能"><span class="nav-number">1.</span> <span class="nav-text">OllyDBG 常用功能</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#跟踪"><span class="nav-number">1.1.</span> <span class="nav-text">跟踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修改"><span class="nav-number">1.2.</span> <span class="nav-text">修改</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IDA-Pro-常用功能"><span class="nav-number">2.</span> <span class="nav-text">IDA Pro 常用功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何判断某个call是否重要"><span class="nav-number">3.</span> <span class="nav-text">如何判断某个call是否重要</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tianyu Zhou"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Tianyu Zhou</p>
+  <div class="site-description" itemprop="description">a personal site of Tianyu</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Albert Zhou</span>
+</div>
+  <div class="theme-info">Theme – <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
